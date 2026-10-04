@@ -63,7 +63,7 @@ The `devnet` job reports on every change but is not required, so an outage of th
 
 1. Import this repository in Vercel. The framework is detected as Next.js; keep the defaults.
 2. Set `OAR_DEVNET_RPC_URL` for Production and Preview.
-3. Deploy, then run the smoke test against the deployment URL.
+3. Deploy. Every successful production deployment then runs the live smoke test against the production URL (`.github/workflows/deployed.yml`), after waiting for that URL to serve the deployed commit. Once a custom domain is assigned, set it as the `OAR_WEB_PRODUCTION_URL` repository variable.
 4. Add a rate-limit rule in the Vercel Firewall. The app bounds and caches its own work, but per-instance caches are not a rate limit.
 
 ## License

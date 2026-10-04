@@ -8,6 +8,8 @@ import './globals.css';
 export const metadata: Metadata = {
   title: { default: 'OAR Explorer — Devnet', template: '%s · OAR Explorer' },
   description: 'Look up Solana apps, programs, domains and repositories in the Open App Registry. Every link is checked live, from both sides.',
+  // The deployed commit (set by Vercel), so the post-deploy smoke test knows which build it is checking.
+  ...(process.env.VERCEL_GIT_COMMIT_SHA && { other: { 'oar-web-commit': process.env.VERCEL_GIT_COMMIT_SHA } }),
 };
 
 export const viewport: Viewport = {
