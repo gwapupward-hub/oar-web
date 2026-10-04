@@ -1,41 +1,30 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { CLUSTER_OPTIONS, OAR_RELEASE, OAR_RELEASE_URL, OAR_REPO_URL } from '@/lib/site';
+import type { Metadata, Viewport } from 'next';
+import '@fontsource-variable/inter';
+import '@fontsource-variable/geist-mono';
+import { SiteFooter } from '@/components/SiteFooter';
+import { SiteHeader } from '@/components/SiteHeader';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: { default: 'OAR Explorer — Devnet', template: '%s · OAR Explorer' },
-  description: 'Read-only explorer for the Open App Registry: onchain application identity for Solana.',
+  description: 'Look up Solana apps, programs, domains and repositories in the Open App Registry. Every link is checked live, from both sides.',
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#07111F' },
+    { media: '(prefers-color-scheme: light)', color: '#F5F8FC' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <header className="site-head">
-          <Link href="/" className="brand">
-            <span className="brand-mark" aria-hidden="true">OAR</span> Explorer
-          </Link>
-          <nav aria-label="Cluster" className="clusters">
-            {CLUSTER_OPTIONS.map(c =>
-              c.enabled ? (
-                <span key={c.id} className="cluster cluster-active" aria-current="true">
-                  {c.label}
-                </span>
-              ) : (
-                <span key={c.id} className="cluster cluster-disabled" title={c.note}>
-                  {c.label}
-                </span>
-              ),
-            )}
-          </nav>
-        </header>
-        <main>{children}</main>
-        <footer className="site-foot">
-          Read-only · built on{' '}
-          <a href={OAR_RELEASE_URL} target="_blank" rel="noopener noreferrer">OAR {OAR_RELEASE}</a> ·{' '}
-          <a href={OAR_REPO_URL} target="_blank" rel="noopener noreferrer">protocol source</a> · mainnet is not live yet
-        </footer>
+        <a href="#main" className="skip-link">Skip to content</a>
+        <SiteHeader />
+        <main id="main" className="container">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   );
