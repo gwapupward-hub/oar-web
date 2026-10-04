@@ -1,0 +1,51 @@
+name: oar-web checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+# Third-party code runs only from actions pinned to full commit SHAs (tag in the comment; Dependabot keeps them current).
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: npm advisories and registry signatures
+        run: |
+          npm audit --audit-level=low
+          npm audit signatures
+      - run: npm run typecheck && npm test
+      - run: npm run build
+  # Builds and serves the app, then checks OAR's own devnet registration end to end on the public devnet RPC.
+  devnet:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --ignore-scripts && npm run build
+      - name: Live devnet smoke
+        run: |
+          npm start -- -p 3000 > "$RUNNER_TEMP/next.log" 2>&1 &
+          for _ in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3000/ && break; sleep 1; done
+          BASE_URL=http://127.0.0.1:3000 npm run smoke:devnet || { cat "$RUNNER_TEMP/next.log"; exit 1; }

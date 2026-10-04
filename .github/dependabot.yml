@@ -1,0 +1,10 @@
+# Keeps the SHA-pinned GitHub Actions current. npm updates stay manual: the OAR SDK is pinned to a release tarball.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
