@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ResolvedApp } from '@open-app-registry/sdk';
-import { authorityNote, displayHost, toAppView } from '../src/lib/display';
+import { authorityNote, displayHost, evidenceLabel, toAppView } from '../src/lib/display';
 
 const APP = 'Bu1JCyxiVDdDGjtNLLkKhq6KZv6E4LcUgqNkS5t5Nf2K';
 const PROGRAM = 'oariw8YXcYJh9sa9VcmBU3ZCdo2WVGMYPsLjEuUxfrC';
@@ -82,4 +82,13 @@ test('attestation-only links say so and name the issuer', () => {
   const v = toAppView(resolved({ repositories: [{ subject: 'https://github.com/a/b', state: 'attested', attestedBy: ['GFHnocWSaJBAVwfrT4yuzGA1QkGFuA5Eg7NUWcSQ8yUK'] }] } as never));
   const c = v.chips.find(x => x.kind === 'repository')!;
   assert.deepEqual([c.label, c.how, c.attestedBy], ['Attested', 'trusted attestation', ['GFHnocWSaJBAVwfrT4yuzGA1QkGFuA5Eg7NUWcSQ8yUK']]);
+  assert.match(c.explain, /not confirmed by a live check/);
+});
+
+test('labels are evidence-specific, never a blanket "Verified"', () => {
+  const v = toAppView(resolved({ domains: [{ subject: 'oar.example', state: 'failed', method: 'well-known', detail: 'names X', attestedBy: [] }, { subject: 'b.example', state: 'unverified', attestedBy: [] }] }));
+  assert.deepEqual(v.chips.map(c => c.label), ['Program linked', 'Disputed / invalid', 'Unverified', 'Repository linked']);
+  assert.ok(v.chips.every(c => c.label !== 'Verified'));
+  assert.equal(evidenceLabel('domain', 'verified'), 'Domain linked');
+  assert.match(v.chips[0].explain, /upgrade authority published a backlink/);
 });

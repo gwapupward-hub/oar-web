@@ -43,9 +43,11 @@ export interface ProgramView {
 export interface IndexEntry {
   appId: string;
   title: string;
+  summary: string | null;
   status: AppView['status'];
   domains: string[];
   repositories: string[];
+  programs: number;
 }
 
 /** App ID → record, manifest and one live-checked state per claim. Null when no valid AppRecord exists there. */
@@ -86,6 +88,11 @@ export async function searchIndex(query: Query): Promise<IndexEntry[]> {
   return index.filter(e => (query.kind === 'domain' ? e.domains : e.repositories).includes(query.value));
 }
 
+/** Registered apps with a valid manifest, for browsing. Claims only: each app page runs the live checks. */
+export function listApps(): Promise<IndexEntry[]> {
+  return indexCache('index', buildIndex);
+}
+
 async function buildIndex(): Promise<IndexEntry[]> {
   const discriminator = getBase58Decoder().decode(APP_RECORD_DISCRIMINATOR) as Base58EncodedBytes;
   const accounts = await rpc
@@ -109,11 +116,15 @@ async function buildIndex(): Promise<IndexEntry[]> {
       entries.push({
         appId: String(r.appId),
         title: m.name,
+        summary: m.summary ?? null,
         status: r.status,
         domains: (m.domains ?? []).map(d => d.toLowerCase()),
         repositories: (m.repositories ?? []).map(x => x.url.replace(/\.git$/, '').replace(/\/$/, '').toLowerCase()),
+        programs: (m.programs ?? []).length,
       });
     }
   }
-  return entries;
+  // Active apps first, then by name, so browsing starts with what is live.
+  const rank = { Active: 0, Deprecated: 1, Retired: 2, Unknown: 3 } as const;
+  return entries.sort((a, b) => rank[a.status] - rank[b.status] || a.title.localeCompare(b.title));
 }

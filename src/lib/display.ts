@@ -12,8 +12,11 @@ export interface ChipView {
   /** What to print: hostnames in punycode, everything else verbatim (rendered as plain text). */
   display: string;
   state: LinkState;
+  /** Evidence-specific label (brand status language): never a blanket "verified app". */
   label: string;
   how?: string;
+  /** One sentence on what the state means for this link. */
+  explain: string;
   detail?: string;
   cluster?: string;
   name?: string;
@@ -48,12 +51,31 @@ export interface AppView {
 
 const ZERO_ADDRESS = '11111111111111111111111111111111';
 
-export const STATE_LABEL: Record<LinkState, string> = {
-  verified: 'Verified',
-  attested: 'Attested',
-  unverified: 'Unverified',
-  failed: 'Failed',
+const LINKED_LABEL: Record<ChipKind, string> = {
+  program: 'Program linked',
+  domain: 'Domain linked',
+  repository: 'Repository linked',
 };
+
+/** Evidence-specific state labels, following OAR's status language. */
+export function evidenceLabel(kind: ChipKind | null, state: LinkState): string {
+  if (state === 'verified') return kind ? LINKED_LABEL[kind] : 'Linked';
+  return { attested: 'Attested', unverified: 'Unverified', failed: 'Disputed / invalid' }[state];
+}
+
+const EXPLAIN: Record<string, string> = {
+  'program-metadata': 'The program’s upgrade authority published a backlink to this App ID, and the manifest lists the program.',
+  'well-known': 'The domain serves /.well-known/oar.json naming this App ID, and the manifest lists the domain.',
+  'dns-txt': 'The domain’s _oar DNS TXT record names this App ID, and the manifest lists the domain.',
+  'repo-file': 'The repository’s root oar.json names this App ID, and the manifest lists the repository.',
+};
+
+function explain(c: ClaimResult): string {
+  if (c.state === 'verified') return (c.method && EXPLAIN[c.method]) ?? 'Both sides point to each other.';
+  if (c.state === 'attested') return 'A trusted issuer attested this link. It was not confirmed by a live check.';
+  if (c.state === 'failed') return 'The proof points to a different app or cluster.';
+  return 'Claimed in the manifest, but no proof was found.';
+}
 
 const METHOD_LABEL: Record<string, string> = {
   'program-metadata': 'program backlink (Program Metadata)',
@@ -84,8 +106,9 @@ function chip(kind: ChipKind, c: ClaimResult | ProgramClaimResult): ChipView {
     subject: c.subject,
     display: kind === 'domain' ? displayHost(c.subject) : c.subject,
     state: c.state,
-    label: STATE_LABEL[c.state],
+    label: evidenceLabel(kind, c.state),
     how: c.method ? METHOD_LABEL[c.method] ?? c.method : c.state === 'attested' ? 'trusted attestation' : undefined,
+    explain: explain(c),
     detail: c.detail,
     cluster: kind === 'program' ? p.cluster : undefined,
     name: kind === 'program' ? p.name : undefined,

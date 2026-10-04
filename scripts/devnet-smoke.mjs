@@ -17,8 +17,8 @@ const chip = (html, kind, subject) => new RegExp(`data-kind="${kind}" data-state
 
 const app = await get(`/app/${APP}`);
 check(app.status === 200, `GET /app/${APP} → 200 (got ${app.status})`);
-check(/<h1>(?:<!-- -->)?Open App Registry/.test(app.html), 'app title is "Open App Registry" with no Unverified prefix');
-check(/data-field="status">ACTIVE</.test(app.html), 'status ACTIVE');
+check(/<h1[^>]*>(?:<!-- -->)?Open App Registry/.test(app.html) && /data-unverified="false"/.test(app.html), 'app title is "Open App Registry" with no Unverified prefix');
+check(/data-status="Active"/.test(app.html), 'status Active');
 check(/data-field="manifest" data-ok="true"/.test(app.html), 'manifest valid');
 check(chip(app.html, 'program', PROGRAM) === 'verified', `program ${PROGRAM} verified (got ${chip(app.html, 'program', PROGRAM)})`);
 check(chip(app.html, 'repository', REPO) === 'verified', `repository ${REPO} verified (got ${chip(app.html, 'repository', REPO)})`);
