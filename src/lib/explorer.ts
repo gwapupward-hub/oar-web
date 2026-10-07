@@ -1,14 +1,5 @@
 import 'server-only';
-import {
-  address,
-  createDefaultRpcTransport,
-  createSolanaRpcFromTransport,
-  getBase58Decoder,
-  isAddress,
-  type Address,
-  type Base58EncodedBytes,
-  type RpcTransport,
-} from '@solana/kit';
+import { address, getBase58Decoder, isAddress, type Address, type Base58EncodedBytes } from '@solana/kit';
 import {
   APP_RECORD_DISCRIMINATOR,
   APP_RECORD_SIZE,
@@ -17,15 +8,11 @@ import {
   resolveProgram,
   type ResolveOptions,
 } from '@open-app-registry/sdk';
-import { CLUSTER, INDEX_LIMIT, RPC_TIMEOUT_MS, RPC_URL, TRUSTED_ISSUERS } from './config';
+import { CLUSTER, INDEX_LIMIT, TRUSTED_ISSUERS } from './config';
 import { ttlCache } from './cache';
+import { rpc } from './rpc';
 import { toAppView, type AppView, type ChipView } from './display';
 import type { Query } from './query';
-
-// Every RPC call is bounded: a slow or hung provider fails the request instead of holding it open.
-const baseTransport = createDefaultRpcTransport({ url: RPC_URL });
-const transport: RpcTransport = config => baseTransport({ ...config, signal: config.signal ?? AbortSignal.timeout(RPC_TIMEOUT_MS) });
-const rpc = createSolanaRpcFromTransport(transport);
 
 const options = (live: boolean): ResolveOptions => ({ cluster: CLUSTER, live, trustedIssuers: TRUSTED_ISSUERS });
 

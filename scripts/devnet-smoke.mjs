@@ -49,6 +49,13 @@ const byRepo = await get(`/search?q=${encodeURIComponent(REPO)}`);
 check(new RegExp(`data-app-id="${APP}"`).test(byRepo.html), 'search by repository finds the app');
 check((await get('/app/11111111111111111111111111111112')).status === 404, 'unknown App ID → 404');
 
+const register = await get('/register');
+check(register.status === 200 && /<h1[^>]*>Register an app</.test(register.html), 'register page renders');
+const refused = await fetch(`${BASE}/api/register/prepare`, {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ creator: 'nope', name: 'x' }), signal: AbortSignal.timeout(30_000),
+});
+check(refused.status === 400 && /not a Solana address/.test((await refused.json()).error ?? ''), 'register API refuses invalid input');
+
 // The RPC URL may carry a provider key: it must never appear in client assets. Against a local build, scan every
 // file in .next/static; against a deployment, scan every script the fetched pages reference.
 const secrets = [process.env.OAR_DEVNET_RPC_URL, 'api.devnet.solana.com', 'OAR_DEVNET_RPC_URL'].filter(Boolean);

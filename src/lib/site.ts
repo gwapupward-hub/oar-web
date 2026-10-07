@@ -1,7 +1,7 @@
 // Public, non-secret site constants. Safe to import from any component.
 
 /** The OAR protocol release this explorer is built against. */
-export const OAR_RELEASE = 'v0.1.1-rc.1';
+export const OAR_RELEASE = 'v0.1.1-rc.2';
 export const OAR_REPO_URL = 'https://github.com/gwapupward-hub/oar';
 export const OAR_RELEASE_URL = `${OAR_REPO_URL}/releases/tag/${OAR_RELEASE}`;
 export const SAS_REHEARSAL_EVIDENCE_URL =

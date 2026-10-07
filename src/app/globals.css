@@ -313,6 +313,73 @@ p { margin: 0 0 12px; }
 .legend dt { padding-top: 2px; }
 .legend dd { margin: 0; color: var(--muted); font-size: 0.93rem; }
 
+/* Register wizard */
+.register-page { max-width: 820px; }
+.register-page h1 { font-size: clamp(2rem, 5vw, 2.6rem); font-weight: 800; margin: 0 0 12px; }
+.register-page .lede { margin: 0 0 16px; }
+.assurances { color: var(--muted); padding-left: 20px; margin: 0 0 24px; }
+.assurances li { margin-bottom: 4px; }
+.wizard { display: grid; gap: 16px; }
+.wizard-steps { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; color: var(--muted); }
+.wizard-steps li { display: inline-flex; align-items: center; gap: 7px; }
+.wizard-steps li.current { color: var(--text); font-weight: 650; }
+.wizard-steps li.done { color: var(--t-active); }
+.step-num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); font-size: 0.75rem; font-weight: 700; }
+.current .step-num { border-color: var(--accent); color: var(--accent); }
+.done .step-num { border-color: transparent; background: transparent; }
+.wizard-card h2 { margin-bottom: 8px; }
+.connected { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0; }
+.connected code { overflow-wrap: anywhere; }
+.wizard-error { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; color: var(--t-invalid); background: color-mix(in srgb, var(--oar-invalid) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--oar-invalid) 35%, var(--border)); font-size: 0.9rem; overflow-wrap: anywhere; }
+.wizard-error svg { flex: none; margin-top: 3px; }
+.wallet-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.wallet-button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px; font: inherit; font-weight: 600; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; text-align: left; }
+.wallet-button span { flex: 1; }
+.wallet-button img { border-radius: 8px; }
+.wallet-button:hover { border-color: var(--accent); }
+.claim-form { display: grid; gap: 14px; margin-top: 12px; }
+.field { display: grid; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.field > span, .field > legend { font-size: 0.85rem; font-weight: 600; padding: 0; }
+.field em { font-style: normal; font-weight: 400; color: var(--muted); margin-left: 6px; }
+.field input, .field textarea {
+  width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+}
+.field textarea { font-family: var(--font-mono); font-size: 0.88rem; resize: vertical; }
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-check { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; font-size: 0.82rem; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); cursor: pointer; }
+.chip-check input { position: absolute; opacity: 0; pointer-events: none; }
+.chip-check.on { border-color: var(--accent); color: var(--accent); font-weight: 600; background: color-mix(in srgb, var(--oar-registry-blue) 10%, var(--surface)); }
+.chip-check:has(input:focus-visible) { outline: 3px solid var(--ring); outline-offset: 2px; }
+.chip-check:has(input:disabled) { opacity: 0.5; cursor: not-allowed; }
+.advanced summary { cursor: pointer; font-size: 0.88rem; color: var(--muted); margin-bottom: 10px; }
+.advanced[open] { display: grid; gap: 12px; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; justify-self: start; }
+.button:disabled { opacity: 0.55; cursor: not-allowed; filter: none; transform: none; }
+.button-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.link-button { display: inline-flex; align-items: center; gap: 4px; padding: 0; font: inherit; color: var(--accent); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.app-id-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.app-id-row code { font-size: 0.9rem; overflow-wrap: anywhere; }
+.file-list { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 12px; }
+.file-list li { padding-left: 4px; }
+.file-list li > span { display: block; margin-top: 6px; font-size: 0.9rem; color: var(--muted); }
+.file-list .button { height: 36px; padding: 0 14px; font-size: 0.88rem; }
+.check-list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+.check-list li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+.check-list li > svg { flex: none; margin-top: 4px; }
+.check-list li > div { min-width: 0; }
+.check-list p { margin: 2px 0 0; overflow-wrap: anywhere; }
+.check-ok > svg { color: var(--t-active); }
+.check-pending > svg { color: var(--muted); }
+.check-fail > svg { color: var(--t-invalid); }
+.tx-review { display: grid; gap: 10px; margin-top: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg); }
+.tx-summary { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 0.92rem; overflow-wrap: anywhere; }
+.tx-done { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; color: var(--t-active); font-weight: 600; }
+.program-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.program-actions { display: grid; gap: 10px; margin: 8px 0 0 4px; }
+.spin { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Responsive */
 @media (max-width: 900px) {
   .detail-grid { grid-template-columns: 1fr; }
