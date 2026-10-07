@@ -1,0 +1,27 @@
+{
+  "$comment": "Site icons, pinned to the OAR brand kit. Update only with: node scripts/sync-brand.mjs [ref]",
+  "repository": "gwapupward-hub/oar",
+  "commit": "3ecbf8ffeab4f420f2da18449d1071896d41acd9",
+  "assets": [
+    {
+      "path": "src/app/favicon.ico",
+      "source": "brand/icons/favicon.ico",
+      "sha256": "d13bc9ddfb66d901ceb758f345a74dfb64ba3aa33071a6c73badcde8e2087141"
+    },
+    {
+      "path": "src/app/icon.svg",
+      "source": "brand/logos/OAR_icon_gradient.svg",
+      "sha256": "a306f8d682ca78c7c9d30bf7cf53d219665a4cfb7f9d8575d5bec75e6cd98a08"
+    },
+    {
+      "path": "src/app/icon.png",
+      "source": "brand/icons/OAR_icon_32x32.png",
+      "sha256": "947eb5eb13d52d82c658cf3e3cca3a063e62601f913f148e68500acd58f918bd"
+    },
+    {
+      "path": "public/oar-mark.svg",
+      "source": "brand/logos/OAR_icon_gradient.svg",
+      "sha256": "a306f8d682ca78c7c9d30bf7cf53d219665a4cfb7f9d8575d5bec75e6cd98a08"
+    }
+  ]
+}
