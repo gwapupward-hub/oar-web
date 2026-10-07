@@ -24,12 +24,14 @@ import {
   describeProgramLink,
   describeRegistration,
   exportUnsignedTransaction,
+  fetchManifest,
   fetchMaybeAppRecord,
   fetchProgramBacklink,
   findAppId,
   getProgramLinkInstructions,
   getProgramUpgradeAuthority,
   getRegisterInstructionAsync,
+  getUpdateManifestInstruction,
   hashManifest,
   hashManifestHex,
   nextAppNonce,
@@ -90,8 +92,20 @@ function manifestUri(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
   if (!/^(https:\/\/|ar:\/\/|ipfs:\/\/)[\x21-\x7e]+$/.test(value)) return fail('The manifest URI must be an https://, ar:// or ipfs:// address.');
   if (new TextEncoder().encode(value).length > MAX_URI_LEN) return fail(`The manifest URI is longer than ${MAX_URI_LEN} bytes.`);
+  // A manifest saved over a proof file breaks the proof: a repository's root oar.json and a domain's
+  // /.well-known/oar.json must hold the proof the wizard gives, so the manifest has to live in another file.
+  if (/\/oar\.json$/i.test(value.split(/[?#]/)[0])) {
+    return fail('oar.json is reserved for the ownership proof (a repository\'s root oar.json, or a domain\'s /.well-known/oar.json). Serve the manifest from another file, such as oar-manifest.json.');
+  }
   return value;
 }
+
+/** A raw GitHub link that follows a branch: a later edit to the file stops it matching the onchain hash. */
+export function followsBranch(uri: string): boolean {
+  const m = /^https:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/([^/]+)\//.exec(uri);
+  return !!m && !/^[0-9a-f]{40}$/.test(m[1]);
+}
+const PIN_TIP = ' Tip: this link follows a branch, so any later edit to the file breaks the match. A link with a commit hash in place of the branch name stays stable.';
 
 export function parseForm(body: unknown): ClaimForm {
   const b = (body ?? {}) as Record<string, unknown>;
@@ -168,7 +182,7 @@ export async function check(rpc: ServerRpc, body: unknown, http: HttpOptions = {
     rows.push({ kind: 'record', subject: appId, state: 'pending', detail: 'Not registered yet.' });
   }
   const hosting = await checkManifestHosting(claim.manifestUri, manifest, { fetch: http.fetch });
-  rows.push({ kind: 'manifest', subject: claim.manifestUri, state: hosting.ok ? 'ok' : 'fail', detail: hosting.ok ? 'Served exactly as it will be committed.' : hosting.detail });
+  rows.push({ kind: 'manifest', subject: claim.manifestUri, state: hosting.ok ? 'ok' : 'fail', detail: hosting.ok ? `Served exactly as it will be committed.${followsBranch(claim.manifestUri) ? PIN_TIP : ''}` : hosting.detail });
   for (const host of manifest.domains ?? []) {
     const r = await checkDomain(host, appId, CLUSTER, { fetch: http.fetch, resolveTxt: http.resolveTxt });
     rows.push({ kind: 'domain', subject: host, state: r.state === 'verified' ? 'ok' : r.state === 'failed' ? 'fail' : 'pending', detail: r.state === 'verified' ? `Proof found (${r.method}).` : r.detail ?? 'No proof found yet.' });
@@ -232,6 +246,42 @@ export async function buildLink(rpc: ServerRpc, body: unknown): Promise<BuiltLin
   if (plan.action === 'unchanged') return { action: 'unchanged', summary };
   const exported = exportUnsignedTransaction(plan.instructions, signer, await latestBlockhash(rpc), { version: legacy ? 'legacy' : 0 });
   return squads ? { action: plan.action, summary, squads: exported.base58 } : { action: plan.action, summary, transaction: exported.base64 };
+}
+
+/**
+ * Point a registered App ID at a new manifest location (and content), for its record authority. The manifest is read
+ * from the new address and must be valid for this App ID, so the record never commits to a file nobody can fetch.
+ */
+export async function buildUpdate(rpc: ServerRpc, body: unknown, http: HttpOptions = {}): Promise<BuiltTransaction & { authority: string }> {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const appId = addr(b.appId, 'App ID');
+  const uri = manifestUri(str(b.manifestUri, 'Manifest URI', MAX_URI_LEN))!;
+  const record = await fetchMaybeAppRecord(rpc, appId, { commitment: 'confirmed' });
+  if (!record.exists) fail(`${appId} is not a registered App ID on devnet.`);
+  if (record.data.status === 2) fail('This App ID is retired; its record can no longer change.');
+  let manifest: unknown;
+  try {
+    manifest = await fetchManifest(uri, { fetch: http.fetch });
+  } catch (e) {
+    return fail(`Could not read a manifest at that address: ${(e as Error).message}`);
+  }
+  const v = validateManifest(manifest);
+  if (!v.valid) fail(`The file at that address is not a valid manifest: ${v.errors.join('; ')}`);
+  const m = manifest as OarManifest;
+  if (m.app_id !== appId) fail('The manifest at that address names a different App ID.');
+  if (m.cluster !== CLUSTER) fail(`The manifest must name ${CLUSTER}.`);
+  const hash = hashManifest(m);
+  const sameHash = bytesEqual(record.data.manifestHash, hash);
+  if (sameHash && record.data.manifestUri === uri) fail('The record already points at this manifest. Nothing to update.');
+  const authority = record.data.authority;
+  const ix = getUpdateManifestInstruction({ appRecord: appId, authority: createNoopSigner(authority), manifestUri: uri, manifestHash: hash });
+  const summary = [
+    `Updates App ID ${appId} on ${CLUSTER}, signed by its authority ${authority}.`,
+    `Manifest location: ${record.data.manifestUri} → ${uri}`,
+    sameHash ? 'Manifest content: unchanged.' : `Manifest content: changes to SHA-256 ${hashManifestHex(m)}.`,
+    'No rent and no other account changes; only the network fee.',
+  ];
+  return { summary, authority, transaction: exportUnsignedTransaction([ix], authority, await latestBlockhash(rpc)).base64 };
 }
 
 /** The programs a wire transaction calls, read from its compiled message. Lookup tables are refused. */

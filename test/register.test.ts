@@ -17,7 +17,7 @@ import {
   type KeyPairSigner,
 } from '@solana/kit';
 import { OAR_PROGRAM_ID, PROGRAM_METADATA_PROGRAM_ID, findAppId, getAppRecordEncoder, hashManifest } from '@open-app-registry/sdk';
-import { RegisterError, buildLink, buildRegister, check, parseClaim, parseForm, prepare, relay, status, transactionPrograms } from '../src/lib/register';
+import { RegisterError, buildLink, buildRegister, buildUpdate, check, followsBranch, parseClaim, parseForm, prepare, relay, status, transactionPrograms } from '../src/lib/register';
 import type { ServerRpc } from '../src/lib/rpc';
 
 const SYSTEM = address('11111111111111111111111111111111');
@@ -251,4 +251,44 @@ test('the relay sends only fully signed registration transactions', async () => 
   statuses.set('sig1', { confirmationStatus: 'confirmed', err: null });
   assert.deepEqual(await status(rpc, { signature: '5'.repeat(88) }), { state: 'pending' });
   await assert.rejects(status(rpc, { signature: 'sig1' }), /Not a transaction signature/);
+});
+
+test('a manifest cannot be served from a proof file, and branch links get a pinning tip', async () => {
+  const creator = await generateKeyPairSigner();
+  for (const uri of ['https://raw.githubusercontent.com/me/app/main/oar.json', 'https://myapp.xyz/.well-known/OAR.json?x=1']) {
+    assert.throws(() => parseForm({ creator: creator.address, name: 'A', manifestUri: uri }), /reserved for the ownership proof/);
+  }
+  const { rpc } = fakeRpc();
+  const c = await prepared(rpc, creator);
+  await assert.rejects(parseClaim({ ...c, manifestUri: 'https://raw.githubusercontent.com/me/app/main/oar.json' }), /reserved for the ownership proof/);
+  assert.equal(followsBranch('https://raw.githubusercontent.com/me/app/main/oar-manifest.json'), true);
+  assert.equal(followsBranch(`https://raw.githubusercontent.com/me/app/${'a'.repeat(40)}/oar-manifest.json`), false);
+  assert.equal(followsBranch('https://myapp.xyz/.well-known/oar-manifest.json'), false);
+});
+
+test('an update repoints a registered record, signed and paid by its authority only', async () => {
+  const creator = await generateKeyPairSigner();
+  const { rpc, accounts } = fakeRpc();
+  const c = await prepared(rpc, creator);
+  const oldUri = 'https://raw.githubusercontent.com/me/app/main/oar.manifest.old';
+  const newUri = `https://raw.githubusercontent.com/me/app/${'b'.repeat(40)}/oar-manifest.json`;
+  const http = { fetch: stubFetch({ [newUri]: JSON.stringify(c.manifest), [oldUri]: JSON.stringify(c.manifest) }) };
+
+  await assert.rejects(buildUpdate(rpc, { appId: c.appId, manifestUri: newUri }, http), /not a registered App ID/);
+  setRecord(accounts, c.appId as Address, creator.address, c.manifest, oldUri);
+
+  const built = await buildUpdate(rpc, { appId: c.appId, manifestUri: newUri }, http);
+  assert.equal(built.authority, creator.address);
+  const tx = programsOf(built.transaction!);
+  assert.deepEqual(tx.programs, [OAR_PROGRAM_ID]);
+  assert.equal(tx.feePayer, creator.address);
+  assert.ok(built.summary.some(l => l.includes(`${oldUri} → ${newUri}`)));
+  assert.ok(built.summary.includes('Manifest content: unchanged.'));
+
+  await assert.rejects(buildUpdate(rpc, { appId: c.appId, manifestUri: oldUri }, http), /Nothing to update/);
+  await assert.rejects(buildUpdate(rpc, { appId: c.appId, manifestUri: 'https://raw.githubusercontent.com/me/app/main/oar.json' }, http), /reserved for the ownership proof/);
+  await assert.rejects(buildUpdate(rpc, { appId: c.appId, manifestUri: 'https://example.com/missing.json' }, http), /Could not read a manifest/);
+  const other = { ...c.manifest, app_id: creator.address };
+  const otherUri = 'https://example.com/other.json';
+  await assert.rejects(buildUpdate(rpc, { appId: c.appId, manifestUri: otherUri }, { fetch: stubFetch({ [otherUri]: JSON.stringify(other) }) }), /different App ID/);
 });
