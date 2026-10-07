@@ -1,11 +1,15 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { connection } from 'next/server';
+import { headers } from 'next/headers';
 import { ArrowRight, Box, FolderGit2, Globe, Link2, Radio, Stamp } from 'lucide-react';
 import { AppTile } from '@/components/AppTile';
 import { SearchForm } from '@/components/SearchForm';
 import { listApps } from '@/lib/explorer';
 import { EXAMPLE_APP_ID } from '@/lib/site';
+import { homeMetadata, websiteSchema } from '@/lib/seo';
+
+export const metadata = homeMetadata;
 
 export const maxDuration = 60;
 
@@ -17,11 +21,13 @@ const EXAMPLES = [
 
 export default async function Home() {
   await connection(); // per-request rendering, so the CSP nonce applies
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <>
+      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema).replace(/</g, '\\u003c') }} />
       <section className="hero">
         <p className="eyebrow">
-          <span className="live-dot" aria-hidden="true" /> OAR Explorer · Solana Devnet
+          <span className="live-dot" aria-hidden="true" /> Open App Registry · Solana Devnet
         </p>
         <h1>
           Open by default.
@@ -29,8 +35,8 @@ export default async function Home() {
           <span className="gradient-text">Verifiable by design.</span>
         </h1>
         <p className="lede">
-          Look up any app, program, domain or repository in the Open App Registry. Names prove nothing on their own, so every
-          link is checked live, from both sides.
+          Open App Registry is an onchain application identity protocol for Solana. Look up apps, programs, domains and
+          source repositories. Names prove nothing on their own, so every link is checked live, from both sides.
         </p>
         <SearchForm size="lg" autoFocus />
         <div className="examples" aria-label="Example searches">

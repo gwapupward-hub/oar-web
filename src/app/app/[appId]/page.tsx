@@ -4,13 +4,14 @@ import { notFound } from 'next/navigation';
 import { AppDetail } from '@/components/AppDetail';
 import { TRUSTED_ISSUERS } from '@/lib/config';
 import { getApp } from '@/lib/explorer';
+import { appMetadata } from '@/lib/seo';
 
 export const maxDuration = 60;
 type Props = { params: Promise<{ appId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const app = await getApp((await params).appId);
-  return { title: app ? (app.unverified ? `Unverified ${app.title}` : app.title) : 'Not found' };
+  const { appId } = await params;
+  return appMetadata(appId, await getApp(appId));
 }
 
 export default async function AppPage({ params }: Props) {

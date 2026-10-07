@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --conditions=react-server --import tsx --test test/*.test.ts",
     "smoke:devnet": "node scripts/devnet-smoke.mjs",
+    "smoke:seo": "node scripts/seo-smoke.mjs",
     "sync:brand": "node scripts/sync-brand.mjs"
   },
   "dependencies": {

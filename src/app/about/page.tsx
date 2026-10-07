@@ -3,8 +3,9 @@ import Link from 'next/link';
 import { connection } from 'next/server';
 import { EvidencePill } from '@/components/Pill';
 import { OAR_RELEASE, OAR_REPO_URL } from '@/lib/site';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = { title: 'How it works' };
+export const metadata: Metadata = pageMetadata('How OAR Verifies Solana App Identity | Open App Registry', 'Learn how OAR checks Solana program backlinks, domain proofs and repository links. Evidence proves control; it does not certify app safety. Devnet only.', '/about');
 
 export default async function About() {
   await connection(); // per-request rendering, so the CSP nonce applies

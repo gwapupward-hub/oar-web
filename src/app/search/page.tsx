@@ -6,8 +6,9 @@ import { SearchForm } from '@/components/SearchForm';
 import { lookupAddress, searchIndex } from '@/lib/explorer';
 import { classifyQuery } from '@/lib/query';
 import { EXAMPLE_APP_ID } from '@/lib/site';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = { title: 'Search' };
+export const metadata: Metadata = pageMetadata('Search Solana Apps and Link Evidence | OAR', 'Look up an App ID, program ID, domain or GitHub repository in Open App Registry on Solana Devnet.', '/search', false);
 export const maxDuration = 60;
 
 const KIND_LABEL = { address: 'Address', domain: 'Domain', repository: 'Repository', invalid: 'Query' } as const;

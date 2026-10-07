@@ -49,3 +49,4 @@ jobs:
           npm start -- -p 3000 > "$RUNNER_TEMP/next.log" 2>&1 &
           for _ in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3000/ && break; sleep 1; done
           BASE_URL=http://127.0.0.1:3000 npm run smoke:devnet || { cat "$RUNNER_TEMP/next.log"; exit 1; }
+          BASE_URL=http://127.0.0.1:3000 npm run smoke:seo || { cat "$RUNNER_TEMP/next.log"; exit 1; }
