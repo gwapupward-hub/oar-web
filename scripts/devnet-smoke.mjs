@@ -3,6 +3,7 @@
 // With EXPECT_COMMIT set (post-deploy runs), it first waits until BASE_URL serves that commit.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:3000';
 const EXPECT_COMMIT = process.env.EXPECT_COMMIT;
@@ -55,6 +56,18 @@ const refused = await fetch(`${BASE}/api/register/prepare`, {
   method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ creator: 'nope', name: 'x' }), signal: AbortSignal.timeout(30_000),
 });
 check(refused.status === 400 && /not a Solana address/.test((await refused.json()).error ?? ''), 'register API refuses invalid input');
+
+// Served icons must be the brand-kit bytes pinned in brand.lock.json, and every page must link them.
+const brand = JSON.parse(readFileSync('brand.lock.json', 'utf8'));
+const iconHrefs = [...app.html.matchAll(/<link rel="(?:shortcut )?icon" href="([^"]+)"/g)].map(m => m[1].replaceAll('&amp;', '&'));
+for (const asset of brand.assets) {
+  const name = asset.path.replace(/^(src\/app|public)/, '');
+  const href = asset.path.startsWith('public/') ? name : iconHrefs.find(h => h.split('?')[0] === name);
+  if (!asset.path.startsWith('public/')) check(Boolean(href), `pages link ${name}`);
+  const res = href && await fetch(BASE + href, { signal: AbortSignal.timeout(30_000) });
+  const served = res?.ok ? createHash('sha256').update(Buffer.from(await res.arrayBuffer())).digest('hex') : null;
+  check(served === asset.sha256, `${href ?? name} is brand ${asset.source}`);
+}
 
 // The RPC URL may carry a provider key: it must never appear in client assets. Against a local build, scan every
 // file in .next/static; against a deployment, scan every script the fetched pages reference.

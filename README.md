@@ -60,6 +60,13 @@ CI (`.github/workflows/ci.yml`) has two jobs:
 - **check:** `npm audit`, registry signature verification, the type check, the unit tests and the build;
 - **devnet:** serves the built app and runs the live devnet smoke test against OAR's own registration (`Bu1JCyxi…`).
 
+### Brand icons
+
+The favicon and site icons (`src/app/favicon.ico`, `src/app/icon.svg`, `src/app/icon.png`, `public/oar-mark.svg`) are
+byte-for-byte copies of the OAR brand kit in [`gwapupward-hub/oar/brand`](https://github.com/gwapupward-hub/oar/tree/main/brand),
+pinned by commit and SHA-256 in `brand.lock.json`. Don't edit them by hand. Run `npm run sync:brand [ref]` instead. The unit
+tests fail on any drift or on an unpinned icon file, and the smoke test checks that the served icons match the lock.
+
 ## Repository protection
 
 Import `.github/rulesets/main.json` under Settings → Rules → Rulesets → New ruleset → Import a ruleset. It enforces:
