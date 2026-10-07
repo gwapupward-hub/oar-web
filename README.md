@@ -49,6 +49,51 @@ Search takes an **App ID**, a **program ID**, a **domain** or a **GitHub reposit
 | --- | --- | --- |
 | `OAR_DEVNET_RPC_URL` | Production | A dedicated devnet RPC URL, which may contain a provider key. It is read on the server only; never expose it as `NEXT_PUBLIC_*`. If unset, the public devnet endpoint is used, which is suitable for development only. |
 | `OAR_TRUSTED_ISSUERS` | No | Comma-separated SAS credential addresses whose OAR attestations count as `attested`. Empty by default, as the spec requires. |
+| `GOOGLE_SITE_VERIFICATION` | No | Public HTML verification token for a Google Search Console **URL-prefix** property. A **Domain** property uses the DNS TXT record issued by Google instead. |
+| `BING_SITE_VERIFICATION` | No | Public ownership token emitted as the `msvalidate.01` meta tag. Use the actual token issued to the owner's Bing account. |
+
+## Search discovery and verification
+
+The canonical origin is `https://oarprotocol.xyz`. Every public page defines its own canonical, description and
+Open Graph/X metadata. Search results are `noindex, follow` but stay crawlable, so bots can read that directive.
+Preview deployments are `noindex` and disallow crawling. Invalid/missing/retired manifests are not indexable;
+program pages are indexable only when both sides of the link verify.
+
+`/robots.txt` advertises `/sitemap.xml`. The initial sitemap deliberately lists informational pages and the canonical
+OAR Devnet app/program only, after their records validate; arbitrary registrations and search query permutations
+are excluded. Expand this curation when durable application pages warrant it. Static pages remain discoverable
+if the Devnet RPC is unavailable. No invented content modification times are emitted.
+
+The homepage's WebSite/WebApplication JSON-LD uses the existing per-request CSP nonce. No rating, endorsement,
+security certification or mainnet claim is present. The 1200×630 share card uses the pinned official OAR mark
+and brand colors. No third-party script or new dependency is required.
+
+`/.well-known/oar.json` provides OAR's reciprocal domain proof on `solana:devnet`. The protocol manifest and
+onchain record must also list this host before **Domain linked** can appear. Follow the protocol repository's
+[`docs/DOMAIN-VERIFICATION.md`](https://github.com/gwapupward-hub/oar/blob/main/docs/DOMAIN-VERIFICATION.md)
+with the current record authority; publishing the proof alone is not full verification.
+
+After deploying:
+
+1. In [Google Search Console](https://search.google.com/search-console), add Domain property `oarprotocol.xyz` and
+   publish its issued TXT value in Vercel DNS; verify with the owner's Google account. Alternatively, add URL-prefix
+   property `https://oarprotocol.xyz/`, configure the issued HTML token, redeploy, and verify.
+2. In [Bing Webmaster Tools](https://www.bing.com/webmasters), import the verified Search Console property or
+   use its issued verification token. Never fabricate tokens or claim ownership before the service verifies it.
+3. Submit `https://oarprotocol.xyz/sitemap.xml` to both tools; request homepage, `/about` and canonical OAR App ID
+   indexing through the relevant URL inspection tools. Indexation/ranking are search-engine decisions, not release guarantees.
+4. Run the read-only check below and the existing Devnet smoke. Record deployed SHA, date, returned headers,
+   TLS/CAA checks and any external scan result. HTTPS already receives Vercel's HSTS header; verify the real response
+   rather than reducing its current lifetime. Only enable `includeSubDomains` or preload after validating every subdomain's HTTPS.
+
+   ```bash
+   BASE_URL=https://oarprotocol.xyz npm run smoke:seo
+   BASE_URL=https://oarprotocol.xyz npm run smoke:devnet
+   ```
+
+External checks: [MDN HTTP Observatory](https://developer.mozilla.org/en-US/observatory) and
+[SecurityHeaders](https://securityheaders.com/?q=https%3A%2F%2Foarprotocol.xyz&followRedirects=on).
+Their results are point-in-time diagnostics, not a protocol or application security audit.
 
 ## Develop
 

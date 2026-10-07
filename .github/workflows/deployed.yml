@@ -29,4 +29,4 @@ jobs:
           # The official domain. The OAR_WEB_PRODUCTION_URL repository variable overrides it.
           BASE_URL: ${{ vars.OAR_WEB_PRODUCTION_URL || 'https://oarprotocol.xyz' }}
           EXPECT_COMMIT: ${{ github.event.deployment.sha }}
-        run: npm run smoke:devnet
+        run: npm run smoke:devnet && npm run smoke:seo

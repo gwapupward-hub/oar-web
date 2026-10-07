@@ -1,5 +1,11 @@
 // Public, non-secret site constants. Safe to import from any component.
 
+/** Fixed canonical origin; never derive search or sharing URLs from an incoming Host header. */
+export const SITE_URL = 'https://oarprotocol.xyz';
+export const SITE_TITLE = 'Open App Registry (OAR) — Verifiable Solana App Identity';
+export const SITE_DESCRIPTION = 'Explore Solana application identity with Open App Registry (OAR). Check App IDs, program backlinks, domains and source repositories. Solana Devnet only.';
+export const OAR_REGISTRY_PROGRAM = 'oariw8YXcYJh9sa9VcmBU3ZCdo2WVGMYPsLjEuUxfrC';
+
 /** The OAR protocol release this explorer is built against. */
 export const OAR_RELEASE = 'v0.1.1-rc.2';
 export const OAR_REPO_URL = 'https://github.com/gwapupward-hub/oar';

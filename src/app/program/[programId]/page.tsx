@@ -8,13 +8,14 @@ import { Avatar } from '@/components/Avatar';
 import { EvidencePill } from '@/components/Pill';
 import { TRUSTED_ISSUERS } from '@/lib/config';
 import { getProgram } from '@/lib/explorer';
+import { programMetadata } from '@/lib/seo';
 
 export const maxDuration = 60;
 type Props = { params: Promise<{ programId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const view = await getProgram((await params).programId);
-  return { title: view ? `Program of ${view.app.title}` : 'Not found' };
+  const { programId } = await params;
+  return programMetadata(programId, await getProgram(programId));
 }
 
 function Direction({ ok, title, body }: { ok: boolean; title: string; body: string }) {

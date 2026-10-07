@@ -2,11 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { RegisterWizard } from '@/components/register/RegisterWizard';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Register an app',
-  description: 'Give an existing Solana app its App ID on devnet, then prove each link from the side you control.',
-};
+export const metadata: Metadata = pageMetadata('Register a Solana App ID | Open App Registry', 'Give an existing Solana app its OAR App ID on Devnet, then prove program, domain and source links from the side you control. Sign with your own wallet.', '/register');
 
 export default async function RegisterPage() {
   await connection(); // per-request rendering, so the CSP nonce applies
