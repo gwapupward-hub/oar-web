@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { CLUSTER_OPTIONS } from '@/lib/site';
 import { Logo } from './Logo';
+import { ThemeSettings } from './ThemeSettings';
 
 export function SiteHeader() {
   return (
@@ -24,6 +25,7 @@ export function SiteHeader() {
               ),
             )}
           </div>
+          <ThemeSettings />
         </nav>
       </div>
     </header>
