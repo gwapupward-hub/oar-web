@@ -14,19 +14,36 @@ const failures = [];
 const check = (ok, what) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) failures.push(what); };
 const get = async (path) => {
   const res = await fetch(BASE + path, { redirect: 'manual', signal: AbortSignal.timeout(90_000) });
-  return { status: res.status, location: res.headers.get('location'), csp: res.headers.get('content-security-policy'), html: await res.text() };
+  return { status: res.status, headers: res.headers, location: res.headers.get('location'), csp: res.headers.get('content-security-policy'), html: await res.text() };
 };
+/** What came back instead of the app: status, Vercel's firewall or protection headers, and the page title. */
+const describeResponse = r =>
+  [
+    `HTTP ${r.status}`,
+    ...['x-vercel-mitigated', 'x-vercel-challenge-token', 'x-vercel-protection-bypass', 'server', 'x-vercel-id']
+      .filter(h => r.headers.get(h))
+      .map(h => `${h}: ${h === 'x-vercel-challenge-token' ? '(present)' : r.headers.get(h)}`),
+    r.location ? `location: ${r.location}` : null,
+    `title: ${/<title>([^<]{0,120})/.exec(r.html)?.[1] ?? '(none)'}`,
+  ].filter(Boolean).join(', ');
 const servedCommit = html => /<meta name="oar-web-commit" content="([0-9a-f]+)"/.exec(html)?.[1] ?? null;
 const chip = (html, kind, subject) => new RegExp(`data-kind="${kind}" data-state="(\\w+)" data-subject="${subject.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}"`).exec(html)?.[1];
 
 // A production alias moves to a new build only once it is ready: wait (up to 3 minutes) rather than check the old one.
 if (EXPECT_COMMIT) {
   let served = null;
+  let last = 'no response';
   for (let i = 0; i < 36 && served !== EXPECT_COMMIT; i++) {
     if (i) await new Promise(r => setTimeout(r, 5_000));
-    served = await get('/').then(r => servedCommit(r.html)).catch(() => null);
+    served = await get('/').then(r => {
+      last = describeResponse(r);
+      return servedCommit(r.html);
+    }, e => {
+      last = `request failed: ${e.message}`;
+      return null;
+    });
   }
-  check(served === EXPECT_COMMIT, `${BASE} serves commit ${EXPECT_COMMIT} (got ${served ?? 'no commit marker'})`);
+  check(served === EXPECT_COMMIT, `${BASE} serves commit ${EXPECT_COMMIT} (got ${served ?? `no commit marker; last response: ${last}`})`);
   if (served !== EXPECT_COMMIT) process.exit(1);
 }
 
