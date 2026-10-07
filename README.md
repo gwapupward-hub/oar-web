@@ -85,6 +85,8 @@ The `devnet` job reports on every change but is not required, so an outage of th
 3. Deploy. Every successful production deployment then runs the live smoke test against https://oarprotocol.xyz (`.github/workflows/deployed.yml`), after waiting for it to serve the deployed commit. If the domain changes, set the new one as the `OAR_WEB_PRODUCTION_URL` repository variable.
 4. Add a rate-limit rule in the Vercel Firewall: Request Path matches `^/($|app/|program/|search|about|register|api/)`, fixed window of 60 seconds, 120 requests per IP, then 429. The app bounds and caches its own work, but per-instance caches are not a rate limit, and `/api/register` triggers RPC calls and outbound checks.
 
+To check any devnet address read-only (an App ID, or the wallet that registered one), run Actions → **Inspect a devnet address** with that address. The report lists the record, the manifest and claim states, and every program its transactions called.
+
 ## License
 
 Apache-2.0
