@@ -2,7 +2,7 @@
 
 An explorer and registration wizard for the [Open App Registry](https://github.com/gwapupward-hub/oar) (OAR): onchain application identity for Solana. It is one client of the OAR protocol, built on the published SDK, and it is not part of the protocol itself.
 
-**Status: v0, Solana devnet only.**
+**Live at https://oarprotocol.xyz. Status: v0, Solana devnet only.**
 
 - It runs against the `v0.1.1-rc.2` release candidate.
 - Mainnet appears in the cluster selector but stays disabled until the OAR mainnet gate passes.
@@ -82,7 +82,7 @@ The `devnet` job reports on every change but is not required, so an outage of th
 
 1. Import this repository in Vercel. The framework is detected as Next.js; keep the defaults.
 2. Set `OAR_DEVNET_RPC_URL` for Production and Preview.
-3. Deploy. Every successful production deployment then runs the live smoke test against the production URL (`.github/workflows/deployed.yml`), after waiting for that URL to serve the deployed commit. Once a custom domain is assigned, set it as the `OAR_WEB_PRODUCTION_URL` repository variable.
+3. Deploy. Every successful production deployment then runs the live smoke test against https://oarprotocol.xyz (`.github/workflows/deployed.yml`), after waiting for it to serve the deployed commit. If the domain changes, set the new one as the `OAR_WEB_PRODUCTION_URL` repository variable.
 4. Add a rate-limit rule in the Vercel Firewall: Request Path matches `^/($|app/|program/|search|about|register|api/)`, fixed window of 60 seconds, 120 requests per IP, then 429. The app bounds and caches its own work, but per-instance caches are not a rate limit, and `/api/register` triggers RPC calls and outbound checks.
 
 ## License

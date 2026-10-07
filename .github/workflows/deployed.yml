@@ -25,7 +25,7 @@ jobs:
           node-version-file: .node-version
       - name: Live devnet smoke against production
         env:
-          # Set the OAR_WEB_PRODUCTION_URL repository variable once a custom domain is assigned.
-          BASE_URL: ${{ vars.OAR_WEB_PRODUCTION_URL || 'https://oar-web-ivory.vercel.app' }}
+          # The official domain. The OAR_WEB_PRODUCTION_URL repository variable overrides it.
+          BASE_URL: ${{ vars.OAR_WEB_PRODUCTION_URL || 'https://oarprotocol.xyz' }}
           EXPECT_COMMIT: ${{ github.event.deployment.sha }}
         run: npm run smoke:devnet
