@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getBase58Encoder } from '@solana/kit';
 import type { Wallet, WalletAccount } from '@wallet-standard/base';
-import { ArrowRight, CircleAlert, CircleCheck, CircleDashed, Download, FileJson, LoaderCircle, PenLine, RotateCcw, ShieldCheck, Wallet as WalletIcon } from 'lucide-react';
+import { ArrowRight, Check, CircleAlert, CircleCheck, CircleDashed, Copy, Download, ExternalLink, FileJson, LoaderCircle, PenLine, RotateCcw, ShieldCheck, Smartphone, Wallet as WalletIcon } from 'lucide-react';
 import { CATEGORIES, type BuiltLink, type BuiltTransaction, type CheckResult, type CheckRow, type CategoryName, type PreparedClaim } from '@/lib/register-types';
 import { CopyButton } from '../CopyButton';
 import { base64ToBytes, bytesToBase64, download, inspectTransaction, post, programName, type DecodedTransaction } from './api';
@@ -100,7 +100,7 @@ export function RegisterWizard() {
           saved={saved?.creator === account.address ? saved : null}
           onResume={async c => {
             setClaim(c);
-            await runCheck(c).catch(e => setError((e as Error).message));
+            if (c.manifestUri) await runCheck(c).catch(e => setError((e as Error).message));
           }}
           onPrepared={c => {
             save(c);
@@ -113,7 +113,18 @@ export function RegisterWizard() {
 
       {claim && account && wallet ? (
         <>
-          <DeployStep claim={claim} checked={checked} onCheck={() => runCheck(claim)} onReset={reset} />
+          <DeployStep
+            claim={claim}
+            checked={checked}
+            onCheck={() => runCheck(claim)}
+            onReset={reset}
+            onManifestUri={uri => {
+              const next = { ...claim, manifestUri: uri };
+              save(next);
+              setClaim(next);
+              setChecked(null);
+            }}
+          />
           {checked?.readyToRegister ? (
             <RegisterStep claim={claim} wallet={wallet} account={account} onDone={() => runCheck(claim)} />
           ) : null}
@@ -146,12 +157,61 @@ function ConnectStep({ wallets, onConnect }: { wallets: Wallet[]; onConnect: (w:
           ))}
         </ul>
       ) : (
-        <p className="callout">
-          No Solana wallet found. Install one that supports the Wallet Standard (for example Phantom, Solflare or
-          Backpack), enable devnet, then reload this page.
-        </p>
+        <NoWallet />
       )}
     </section>
+  );
+}
+
+/** Phone browsers have no wallet extensions; wallet apps expose one only inside their own browser. */
+function isPhone(): boolean {
+  const ua = navigator.userAgent;
+  return /Android|iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
+/** Universal links that reopen this exact page inside the wallet app, in the official wallet adapters' format. */
+export function walletBrowseLinks(href: string, origin: string) {
+  const url = encodeURIComponent(href);
+  const ref = encodeURIComponent(origin);
+  return [
+    { name: 'Phantom', href: `https://phantom.app/ul/browse/${url}?ref=${ref}`, devnet: 'Settings → Developer Settings → Testnet Mode, then Solana Devnet' },
+    { name: 'Solflare', href: `https://solflare.com/ul/v1/browse/${url}?ref=${ref}`, devnet: 'switch the network to Devnet in Settings' },
+  ];
+}
+
+function NoWallet() {
+  const [links, setLinks] = useState<ReturnType<typeof walletBrowseLinks> | null>(null);
+  useEffect(() => {
+    if (isPhone()) setLinks(walletBrowseLinks(window.location.href, window.location.origin));
+  }, []);
+  if (!links) {
+    return (
+      <p className="callout">
+        No Solana wallet found. Install one that supports the Wallet Standard (for example Phantom, Solflare or
+        Backpack), enable devnet, then reload this page.
+      </p>
+    );
+  }
+  return (
+    <div className="mobile-wallets" data-field="mobile-wallets">
+      <p className="callout">
+        On a phone, your wallet is only available inside its own app. Open this page there; your progress is kept on this
+        device only if you stay in the same app.
+      </p>
+      <ul className="wallet-list">
+        {links.map(l => (
+          <li key={l.name}>
+            <a className="wallet-button" href={l.href} data-wallet={l.name}>
+              <Smartphone size={20} aria-hidden="true" />
+              <span>Open in {l.name}</span>
+              <ExternalLink size={16} aria-hidden="true" />
+            </a>
+            <p className="small muted wallet-tip">Devnet in {l.name}: {l.devnet}.</p>
+          </li>
+        ))}
+      </ul>
+      <p className="small muted">Another wallet? Open this address in its built-in browser: <code className="wrap">{typeof window === 'undefined' ? '' : window.location.href}</code></p>
+    </div>
   );
 }
 
@@ -273,7 +333,76 @@ function CheckList({ rows }: { rows: CheckRow[] }) {
   );
 }
 
-function DeployStep({ claim, checked, onCheck, onReset }: { claim: PreparedClaim; checked: CheckResult | null; onCheck: () => Promise<void>; onReset: () => void }) {
+/** Downloads are unreliable inside wallet apps' browsers, so every file can also be copied as text. */
+function FileActions({ filename, value }: { filename: string; value: unknown }) {
+  const [copied, setCopied] = useState(false);
+  const text = JSON.stringify(value, null, 2) + '\n';
+  return (
+    <div className="file-actions">
+      <button type="button" className="button button-secondary" onClick={() => download(filename, value)}>
+        <Download size={15} aria-hidden="true" /> {filename}
+      </button>
+      <button
+        type="button"
+        className="button button-secondary"
+        data-copy={filename}
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          } catch {
+            /* clipboard unavailable: the JSON below stays selectable */
+          }
+        }}
+      >
+        {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />} {copied ? 'Copied' : 'Copy JSON'}
+      </button>
+      <details className="json-view">
+        <summary>Show JSON</summary>
+        <pre>{text}</pre>
+      </details>
+    </div>
+  );
+}
+
+const URI_PATTERN = /^(https:\/\/|ar:\/\/|ipfs:\/\/)\S+$/;
+
+function ManifestUriEditor({ value, onSave }: { value: string; onSave: (uri: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  const valid = URI_PATTERN.test(draft.trim());
+  return (
+    <form
+      className="uri-editor"
+      onSubmit={e => {
+        e.preventDefault();
+        if (valid) onSave(draft.trim());
+      }}
+    >
+      <label className="field">
+        <span>Where is the manifest served?</span>
+        <input
+          name="manifestUri"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="https://gist.githubusercontent.com/…/raw/…/oar-manifest.json"
+          spellCheck={false}
+          autoComplete="off"
+          inputMode="url"
+        />
+      </label>
+      <button type="submit" className="button button-secondary" disabled={!valid || draft.trim() === value}>Use this address</button>
+      <p className="small muted">
+        No website? Paste the manifest into a public GitHub Gist, tap <strong>Raw</strong>, and copy that address. The file
+        can live anywhere public: the record pins its SHA-256, so a changed file simply fails the check.
+      </p>
+    </form>
+  );
+}
+
+function DeployStep({
+  claim, checked, onCheck, onReset, onManifestUri,
+}: { claim: PreparedClaim; checked: CheckResult | null; onCheck: () => Promise<void>; onReset: () => void; onManifestUri: (uri: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const domains = (claim.manifest.domains as string[] | undefined) ?? [];
@@ -307,19 +436,19 @@ function DeployStep({ claim, checked, onCheck, onReset }: { claim: PreparedClaim
       </div>
       <ol className="file-list">
         <li>
-          <button type="button" className="button button-secondary" onClick={() => download('oar-manifest.json', claim.manifest)}>
-            <Download size={15} aria-hidden="true" /> oar-manifest.json
-          </button>
+          <FileActions filename="oar-manifest.json" value={claim.manifest} />
           <span>
-            Serve at <code className="wrap">{claim.manifestUri}</code>
-            {onSite ? null : ' (upload it there)'}.
+            {claim.manifestUri ? (
+              <>Serve at <code className="wrap" data-field="manifest-uri">{claim.manifestUri}</code>{onSite ? null : ' (upload it there)'}.</>
+            ) : (
+              'Host it at any public address, then enter that address below.'
+            )}
           </span>
+          <ManifestUriEditor key={claim.manifestUri} value={claim.manifestUri} onSave={onManifestUri} />
         </li>
         {domains.length ? (
           <li>
-            <button type="button" className="button button-secondary" onClick={() => download('oar.json', claim.wellKnown)}>
-              <Download size={15} aria-hidden="true" /> oar.json
-            </button>
+            <FileActions filename="oar.json" value={claim.wellKnown} />
             <span>
               Serve at {domains.map((d, i) => (
                 <span key={d}>{i ? ', ' : ''}<code>https://{d}/.well-known/oar.json</code></span>
@@ -330,9 +459,7 @@ function DeployStep({ claim, checked, onCheck, onReset }: { claim: PreparedClaim
         ) : null}
         {repos.length && claim.repoProof ? (
           <li>
-            <button type="button" className="button button-secondary" onClick={() => download('oar.json', claim.repoProof)}>
-              <Download size={15} aria-hidden="true" /> oar.json
-            </button>
+            <FileActions filename="oar.json" value={claim.repoProof} />
             <span>Commit to the root of {repos.map((r, i) => <span key={r}>{i ? ', ' : ''}<code className="wrap">{r}</code></span>)}.</span>
           </li>
         ) : null}
@@ -341,7 +468,7 @@ function DeployStep({ claim, checked, onCheck, onReset }: { claim: PreparedClaim
         The manifest is committed onchain by its SHA-256 (<code className="wrap">{claim.manifestSha256}</code>). Formatting
         does not matter; any change to its content does.
       </p>
-      <button type="button" className="button" onClick={check} disabled={busy}>
+      <button type="button" className="button" onClick={check} disabled={busy || !claim.manifestUri}>
         {busy ? <LoaderCircle className="spin" size={16} aria-hidden="true" /> : <ShieldCheck size={16} aria-hidden="true" />}{' '}
         {checked ? 'Check again' : 'Check the deployment'}
       </button>
@@ -374,7 +501,11 @@ function SignPanel({
     try {
       setPhase('signing');
       const signed = await signTransaction(wallet, account, base64ToBytes(built.transaction!));
-      inspectTransaction(signed, account.address);
+      try {
+        inspectTransaction(signed, account.address);
+      } catch (e) {
+        throw new Error(`${wallet.name} changed the transaction while signing (${(e as Error).message.replace(/^Refusing to sign: /, '')}). Nothing was sent. Please report which wallet did this.`);
+      }
       setPhase('sending');
       const { signature } = await post<{ signature: string }>('send', { transaction: bytesToBase64(signed) });
       setSignature(signature);

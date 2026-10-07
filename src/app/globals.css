@@ -341,14 +341,15 @@ p { margin: 0 0 12px; }
 .field { display: grid; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
 .field > span, .field > legend { font-size: 0.85rem; font-weight: 600; padding: 0; }
 .field em { font-style: normal; font-weight: 400; color: var(--muted); margin-left: 6px; }
-.field input, .field textarea {
+.field input:not([type='checkbox']), .field textarea {
   width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
 }
 .field textarea { font-family: var(--font-mono); font-size: 0.88rem; resize: vertical; }
-.field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.field input:not([type='checkbox']):focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip-check { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; font-size: 0.82rem; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); cursor: pointer; }
-.chip-check input { position: absolute; opacity: 0; pointer-events: none; }
+.chip-check { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; font-size: 0.82rem; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); cursor: pointer; }
+/* Visually hidden but focusable; sized and positioned inside its chip so it can never widen the page. */
+.chip-check input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }
 .chip-check.on { border-color: var(--accent); color: var(--accent); font-weight: 600; background: color-mix(in srgb, var(--oar-registry-blue) 10%, var(--surface)); }
 .chip-check:has(input:focus-visible) { outline: 3px solid var(--ring); outline-offset: 2px; }
 .chip-check:has(input:disabled) { opacity: 0.5; cursor: not-allowed; }
@@ -364,6 +365,16 @@ p { margin: 0 0 12px; }
 .file-list li { padding-left: 4px; }
 .file-list li > span { display: block; margin-top: 6px; font-size: 0.9rem; color: var(--muted); }
 .file-list .button { height: 36px; padding: 0 14px; font-size: 0.88rem; }
+.file-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.json-view { flex-basis: 100%; }
+.json-view summary { cursor: pointer; font-size: 0.85rem; color: var(--muted); }
+.json-view pre { margin: 8px 0 0; padding: 10px 12px; max-height: 260px; overflow: auto; font-family: var(--font-mono); font-size: 0.78rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.uri-editor { display: grid; gap: 8px; margin-top: 12px; }
+.uri-editor p { margin: 0; }
+.mobile-wallets { display: grid; gap: 10px; margin-top: 12px; }
+.mobile-wallets .wallet-list { margin: 0; }
+.mobile-wallets .wallet-button { text-decoration: none; }
+.wallet-tip { margin: 4px 2px 0; }
 .check-list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
 .check-list li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
 .check-list li > svg { flex: none; margin-top: 4px; }
