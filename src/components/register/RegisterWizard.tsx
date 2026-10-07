@@ -94,6 +94,8 @@ export function RegisterWizard() {
         </p>
       )}
 
+      {account && wallet && !claim ? <UpdateCard wallet={wallet} account={account} /> : null}
+
       {account && !claim ? (
         <DescribeStep
           creator={account.address}
@@ -669,5 +671,67 @@ function LinkStep({ claim, checked, wallet, account, onDone }: { claim: Prepared
         </p>
       ) : null}
     </section>
+  );
+}
+
+/** For an App ID that is already registered: point its record at a new manifest address, signed by its authority. */
+function UpdateCard({ wallet, account }: { wallet: Wallet; account: WalletAccount }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [built, setBuilt] = useState<(BuiltTransaction & { authority: string; appId: string }) | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function submit(form: FormData) {
+    setError(null);
+    setBuilt(null);
+    setBusy(true);
+    try {
+      const appId = String(form.get('appId') ?? '').trim();
+      const update = await post<BuiltTransaction & { authority: string }>('build-update', {
+        appId,
+        manifestUri: String(form.get('manifestUri') ?? '').trim(),
+      });
+      if (update.authority !== account.address) {
+        throw new Error(`Only this App ID's authority ${update.authority} can update it. Connect that wallet.`);
+      }
+      setBuilt({ ...update, appId });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <details className="card wizard-card update-card" data-field="update">
+      <summary><h2 id="update-h">Already registered? Move or change its manifest</h2></summary>
+      <p className="muted small">
+        Host the new manifest first (keep the repository&apos;s <code>oar.json</code> and the domain&apos;s{' '}
+        <code>/.well-known/oar.json</code> for the ownership proofs), then enter its address. The record&apos;s authority
+        signs; nothing else changes.
+      </p>
+      {/* onSubmit, not action: a form action resets the fields, which would wipe them after an error. */}
+      <form onSubmit={e => { e.preventDefault(); void submit(new FormData(e.currentTarget)); }} className="claim-form">
+        <label className="field">
+          <span>App ID</span>
+          <input name="appId" required spellCheck={false} autoComplete="off" />
+        </label>
+        <label className="field">
+          <span>New manifest address <em>a link pinned to a commit stays stable</em></span>
+          <input name="manifestUri" required spellCheck={false} autoComplete="off" inputMode="url" placeholder="https://raw.githubusercontent.com/me/myapp/<commit>/oar-manifest.json" />
+        </label>
+        <button type="submit" className="button button-secondary" disabled={busy}>
+          {busy ? <LoaderCircle className="spin" size={16} aria-hidden="true" /> : <FileJson size={16} aria-hidden="true" />} Prepare the update
+        </button>
+      </form>
+      {error ? <p className="wizard-error" role="alert"><CircleAlert size={16} aria-hidden="true" /> {error}</p> : null}
+      {built ? <SignPanel built={built} wallet={wallet} account={account} label="Update" onConfirmed={() => setDone(true)} /> : null}
+      {done && built ? (
+        <p className="tx-done">
+          <CircleCheck size={16} aria-hidden="true" /> Updated. <Link href={`/app/${built.appId}`}>Open its page</Link> to see the
+          checks run again.
+        </p>
+      ) : null}
+    </details>
   );
 }

@@ -1,6 +1,6 @@
 import { parseJsonStrict } from '@open-app-registry/sdk';
 import { rpc } from '@/lib/rpc';
-import { RegisterError, buildLink, buildRegister, check, parseForm, prepare, relay, status } from '@/lib/register';
+import { RegisterError, buildLink, buildRegister, buildUpdate, check, parseForm, prepare, relay, status } from '@/lib/register';
 
 // JSON API behind the /register wizard. POST only, small bodies, no cookies or sessions: it builds unsigned
 // transactions and relays signed registration transactions, so nothing here can act for anyone.
@@ -14,6 +14,7 @@ const actions: Record<string, (body: unknown) => Promise<unknown>> = {
   check: body => check(rpc, body),
   'build-register': body => buildRegister(rpc, body),
   'build-link': body => buildLink(rpc, body),
+  'build-update': body => buildUpdate(rpc, body),
   send: body => relay(rpc, body),
   status: body => status(rpc, body),
 };

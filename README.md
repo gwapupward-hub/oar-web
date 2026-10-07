@@ -29,6 +29,8 @@ Search takes an **App ID**, a **program ID**, a **domain** or a **GitHub reposit
 
   From a phone: phone browsers have no wallet extensions, so the Connect step offers "Open in Phantom" and "Open in Solflare" links. They reopen the page inside the wallet app, where its Wallet Standard wallet is available. Every file can be copied as JSON, because downloads are unreliable in in-app browsers. The manifest address can be set after preparing, for example a public GitHub Gist's Raw URL.
 
+  Already registered: the **Update** card moves an App ID's manifest to a new address, signed by the record's authority. The server reads the manifest at the new address and refuses it unless it is valid for that App ID. A manifest is never accepted at `oar.json`, because a repository's root `oar.json` and a domain's `/.well-known/oar.json` hold the ownership proofs. A raw GitHub link that follows a branch passes the check with a tip to pin it to a commit.
+
   Safety properties:
   - The server builds unsigned transactions and relays signed ones. It holds no keys and stores nothing.
   - Before every signature, the browser decodes the transaction itself: who pays, and that it calls only the OAR registry, Program Metadata, System and Compute Budget programs (`assertRegistrationInstructions`). The relay refuses anything else.

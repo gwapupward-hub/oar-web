@@ -328,6 +328,9 @@ p { margin: 0 0 12px; }
 .current .step-num { border-color: var(--accent); color: var(--accent); }
 .done .step-num { border-color: transparent; background: transparent; }
 .wizard-card h2 { margin-bottom: 8px; }
+.update-card summary { cursor: pointer; }
+.update-card summary h2 { display: inline; font-size: 1.05rem; }
+.update-card[open] { display: grid; gap: 12px; }
 .connected { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0; }
 .connected code { overflow-wrap: anywhere; }
 .wizard-error { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; color: var(--t-invalid); background: color-mix(in srgb, var(--oar-invalid) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--oar-invalid) 35%, var(--border)); font-size: 0.9rem; overflow-wrap: anywhere; }
