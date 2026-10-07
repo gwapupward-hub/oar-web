@@ -8,6 +8,7 @@ export function SiteHeader() {
       <div className="container header-row">
         <Logo />
         <nav className="header-nav" aria-label="Main">
+          <Link href="/register">Register an app</Link>
           <Link href="/about">How it works</Link>
           <div className="cluster-switch" role="group" aria-label="Cluster">
             {CLUSTER_OPTIONS.map(c =>

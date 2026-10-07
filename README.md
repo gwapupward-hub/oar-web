@@ -1,12 +1,12 @@
 # OAR Explorer
 
-A read-only explorer for the [Open App Registry](https://github.com/gwapupward-hub/oar) (OAR): onchain application identity for Solana. It is one client of the OAR protocol, built on the published SDK, and it is not part of the protocol itself.
+An explorer and registration wizard for the [Open App Registry](https://github.com/gwapupward-hub/oar) (OAR): onchain application identity for Solana. It is one client of the OAR protocol, built on the published SDK, and it is not part of the protocol itself.
 
 **Status: v0, Solana devnet only.**
 
-- It runs against the `v0.1.1-rc.1` release candidate.
+- It runs against the `v0.1.1-rc.2` release candidate.
 - Mainnet appears in the cluster selector but stays disabled until the OAR mainnet gate passes.
-- There is no registration, no accounts and no wallet connection.
+- There are no accounts. A wallet connects only on `/register`, where the team signs its own transactions.
 
 ## What it does
 
@@ -20,12 +20,22 @@ Search takes an **App ID**, a **program ID**, a **domain** or a **GitHub reposit
   - hostnames are shown in punycode, and all manifest text is rendered as plain text;
   - the record authority is not presented as an endorsement.
 - **Program page:** follows the program's canonical `oar` backlink to its app. The link is verified only when both sides agree.
-- **Domain and repository search** matches claims in registered manifests. A match is a claim, not proof; the app page runs the live checks. User input is never fetched.
+- **Domain and repository search** matches claims in registered manifests. A match is a claim, not proof; the app page runs the live checks. Search input is never fetched.
+- **Register an app** (`/register`): the browser version of `oar claim` (see the protocol's `docs/REGISTERING.md`).
+  1. Connect a Wallet Standard wallet on devnet. It becomes the creator, which determines the App ID.
+  2. Describe the app; the page derives the App ID and produces the manifest and proof files to deploy.
+  3. Check the deployment. Registration unlocks only when the hosted manifest matches the one being committed.
+  4. Sign the `register` transaction, then one link per program: in the wallet when it is the upgrade authority, or as an unsigned proposal for a Squads vault.
+
+  Safety properties:
+  - The server builds unsigned transactions and relays signed ones. It holds no keys and stores nothing.
+  - Before every signature, the browser decodes the transaction itself: who pays, and that it calls only the OAR registry, Program Metadata, System and Compute Budget programs (`assertRegistrationInstructions`). The relay refuses anything else.
+  - To check the deployment, the server fetches the manifest URI, domains and repositories the team entered, through the SDK's protected transport (public destinations only, bounded time and size).
 
 ## How it works
 
 - Next.js (App Router) on the Node.js runtime. All resolution runs on the server, so the browser never talks to the RPC or to app hosts.
-- `@open-app-registry/sdk` is installed from the `v0.1.1-rc.1` GitHub release tarball, pinned by URL and by lockfile integrity. Its HTTP transport validates and pins DNS answers, refuses private and special-use addresses, and bounds time and size.
+- `@open-app-registry/sdk` is installed from the `v0.1.1-rc.2` GitHub release tarball, pinned by URL and by lockfile integrity. Its HTTP transport validates and pins DNS answers, refuses private and special-use addresses, and bounds time and size.
 - Every RPC call has a 10-second timeout. Results are cached per instance for 60 seconds, and the search index for 5 minutes, covering at most 200 records.
 - Every request gets a nonce-based Content-Security-Policy (`src/proxy.ts`), plus `nosniff`, `DENY` framing and a strict referrer policy.
 
@@ -64,7 +74,7 @@ The `devnet` job reports on every change but is not required, so an outage of th
 1. Import this repository in Vercel. The framework is detected as Next.js; keep the defaults.
 2. Set `OAR_DEVNET_RPC_URL` for Production and Preview.
 3. Deploy. Every successful production deployment then runs the live smoke test against the production URL (`.github/workflows/deployed.yml`), after waiting for that URL to serve the deployed commit. Once a custom domain is assigned, set it as the `OAR_WEB_PRODUCTION_URL` repository variable.
-4. Add a rate-limit rule in the Vercel Firewall. The app bounds and caches its own work, but per-instance caches are not a rate limit.
+4. Add a rate-limit rule in the Vercel Firewall: Request Path matches `^/($|app/|program/|search|about|register|api/)`, fixed window of 60 seconds, 120 requests per IP, then 429. The app bounds and caches its own work, but per-instance caches are not a rate limit, and `/api/register` triggers RPC calls and outbound checks.
 
 ## License
 
