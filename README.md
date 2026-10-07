@@ -7,6 +7,10 @@ An explorer and registration wizard for the [Open App Registry](https://github.c
 - It runs against the `v0.1.1-rc.2` release candidate.
 - Mainnet appears in the cluster selector but stays disabled until the OAR mainnet gate passes.
 - There are no accounts. A wallet connects only on `/register`, where the team signs its own transactions.
+- **Appearance** in the header offers Light, Dark and System. System follows the device setting by default;
+  explicit choices override it and are saved locally on the device. Changes sync across open tabs.
+  A nonce-authorized head script restores the saved theme before paint; blocked storage falls back safely
+  to the device setting. Without JavaScript, the existing CSS device preference still applies.
 
 ## What it does
 
