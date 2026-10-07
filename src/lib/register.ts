@@ -119,6 +119,7 @@ export async function parseClaim(body: unknown): Promise<{ claim: Claim; manifes
   if (typeof b.nonce !== 'string' || !/^\d{1,19}$/.test(b.nonce)) fail('Nonce must be a whole number.');
   const nonce = BigInt(b.nonce as string);
   if ((await findAppId({ creator, nonce })) !== appId) fail('The App ID does not derive from this creator and nonce.');
+  if (b.manifestUri === '') fail('Set where the manifest is served first.');
   const uri = manifestUri(str(b.manifestUri, 'Manifest URI', MAX_URI_LEN))!;
   const v = validateManifest(b.manifest);
   if (!v.valid) fail(`The manifest is invalid: ${v.errors.join('; ')}`);
@@ -129,20 +130,25 @@ export async function parseClaim(body: unknown): Promise<{ claim: Claim; manifes
 }
 
 /** Step 1: the App ID (first unused nonce for this creator) and the files to deploy. */
+/** Stands in when the team has no domain yet: the manifest's content does not depend on where it is served. */
+const URI_LATER = 'https://uri.later.invalid/';
+
 export async function prepare(rpc: ServerRpc, form: ClaimForm): Promise<PreparedClaim> {
-  if (!form.domains?.length && !form.manifestUri) fail('Add a domain, or a URI where the manifest will be served.');
   const creator = address(form.creator);
   // Bounded: each probe is an RPC read, and a creator rarely has more than a few apps.
   const { nonce, appId } = await nextAppNonce(rpc, creator, { limit: 16n });
+  // With no domain and no URI, the team sets the URI after hosting the file (for example in a Gist, from a phone).
+  const later = !form.domains?.length && !form.manifestUri;
   const files = buildClaimFiles({
     appId, cluster: CLUSTER, name: form.name, summary: form.summary, categories: form.categories as Category[],
-    domains: form.domains, programs: form.programs?.map(p => address(p)), repositories: form.repositories, manifestUri: form.manifestUri,
+    domains: form.domains, programs: form.programs?.map(p => address(p)), repositories: form.repositories,
+    manifestUri: later ? URI_LATER : form.manifestUri,
   });
   const v = validateManifest(files.manifest);
   if (!v.valid) fail(`The manifest would be invalid: ${v.errors.join('; ')}`);
-  manifestUri(files.manifestUri);
+  if (!later) manifestUri(files.manifestUri);
   return {
-    appId, nonce: nonce.toString(), creator, authority: form.authority ?? creator, manifestUri: files.manifestUri,
+    appId, nonce: nonce.toString(), creator, authority: form.authority ?? creator, manifestUri: later ? '' : files.manifestUri,
     manifest: files.manifest as unknown as Record<string, unknown>, manifestSha256: hashManifestHex(files.manifest),
     wellKnown: files.wellKnown as unknown as Record<string, unknown>,
     ...(files.repoProof ? { repoProof: files.repoProof as unknown as Record<string, unknown> } : {}),

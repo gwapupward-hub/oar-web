@@ -21,6 +21,7 @@ export default async function RegisterPage() {
       <ul className="assurances small">
         <li>No account and no custody. Transactions are signed in your wallet, and this site never asks for a seed phrase or key file.</li>
         <li>Before every signature, the page shows what the transaction does and checks that it calls only OAR registry programs.</li>
+        <li>On a phone, the Connect step opens this page inside your wallet app (Phantom or Solflare), where the wallet is available.</li>
         <li>
           Prefer the command line? The same flow is <code>oar claim</code>; see{' '}
           <a href="https://github.com/gwapupward-hub/oar/blob/main/docs/REGISTERING.md">the registration guide</a>.

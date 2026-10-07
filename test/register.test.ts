@@ -116,7 +116,16 @@ test('prepare derives the first free App ID and the files to deploy', async () =
   setRecord(accounts, first.appId as Address, creator.address, first.manifest, first.manifestUri);
   const second = await prepared(rpc, creator);
   assert.equal(second.nonce, '1');
-  await assert.rejects(prepare(rpc, parseForm({ creator: creator.address, name: 'x' })), /Add a domain, or a URI/);
+  // No domain and no URI yet (a phone, before the Gist exists): the URI is set after hosting, and nothing runs until then.
+  const later = await prepare(rpc, parseForm({ creator: creator.address, name: 'Example App' }));
+  assert.equal(later.manifestUri, '');
+  assert.equal('domains' in later.manifest, false);
+  await assert.rejects(check(rpc, later, { fetch: stubFetch({}) }), /Set where the manifest is served first/);
+  await assert.rejects(buildRegister(rpc, later, { fetch: stubFetch({}) }), /Set where the manifest is served first/);
+  const gist = 'https://gist.githubusercontent.com/me/abc/raw/def/oar-manifest.json';
+  const hosted = { ...later, manifestUri: gist };
+  const ready = await check(rpc, hosted, { fetch: stubFetch({ [gist]: JSON.stringify(later.manifest) }) });
+  assert.equal(ready.readyToRegister, true);
 });
 
 test('a claim sent back is re-derived and re-validated, so a client cannot swap fields', async () => {

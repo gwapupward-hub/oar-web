@@ -27,6 +27,8 @@ Search takes an **App ID**, a **program ID**, a **domain** or a **GitHub reposit
   3. Check the deployment. Registration unlocks only when the hosted manifest matches the one being committed.
   4. Sign the `register` transaction, then one link per program: in the wallet when it is the upgrade authority, or as an unsigned proposal for a Squads vault.
 
+  From a phone: phone browsers have no wallet extensions, so the Connect step offers "Open in Phantom" and "Open in Solflare" links. They reopen the page inside the wallet app, where its Wallet Standard wallet is available. Every file can be copied as JSON, because downloads are unreliable in in-app browsers. The manifest address can be set after preparing, for example a public GitHub Gist's Raw URL.
+
   Safety properties:
   - The server builds unsigned transactions and relays signed ones. It holds no keys and stores nothing.
   - Before every signature, the browser decodes the transaction itself: who pays, and that it calls only the OAR registry, Program Metadata, System and Compute Budget programs (`assertRegistrationInstructions`). The relay refuses anything else.
