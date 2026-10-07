@@ -20,7 +20,7 @@ const get = async (path) => {
 const describeResponse = r =>
   [
     `HTTP ${r.status}`,
-    ...['x-vercel-mitigated', 'x-vercel-challenge-token', 'x-vercel-protection-bypass', 'server', 'x-vercel-id']
+    ...['x-vercel-error', 'x-vercel-mitigated', 'x-vercel-challenge-token', 'x-vercel-protection-bypass', 'server', 'x-vercel-id']
       .filter(h => r.headers.get(h))
       .map(h => `${h}: ${h === 'x-vercel-challenge-token' ? '(present)' : r.headers.get(h)}`),
     r.location ? `location: ${r.location}` : null,

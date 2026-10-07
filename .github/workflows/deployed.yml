@@ -8,8 +8,9 @@ permissions:
 defaults:
   run:
     shell: bash
+# Grouped by environment, so a preview deployment's event cannot cancel a running production smoke.
 concurrency:
-  group: production-smoke
+  group: production-smoke-${{ github.event.deployment.environment }}
   cancel-in-progress: true
 jobs:
   smoke:
@@ -25,7 +26,7 @@ jobs:
           node-version-file: .node-version
       - name: Live devnet smoke against production
         env:
-          # Set the OAR_WEB_PRODUCTION_URL repository variable once a custom domain is assigned.
-          BASE_URL: ${{ vars.OAR_WEB_PRODUCTION_URL || 'https://oar-web-ivory.vercel.app' }}
+          # The official domain. The OAR_WEB_PRODUCTION_URL repository variable overrides it.
+          BASE_URL: ${{ vars.OAR_WEB_PRODUCTION_URL || 'https://oarprotocol.xyz' }}
           EXPECT_COMMIT: ${{ github.event.deployment.sha }}
         run: npm run smoke:devnet
