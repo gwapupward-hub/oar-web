@@ -21,6 +21,8 @@ export interface ChipView {
   cluster?: string;
   name?: string;
   attestedBy: string[];
+  /** Unverified only because a check could not complete (RPC, HTTP or DNS outage): show a retry, never a failure. */
+  retryable: boolean;
 }
 
 export interface AppView {
@@ -70,7 +72,13 @@ const EXPLAIN: Record<string, string> = {
   'repo-file': 'The repository’s root oar.json names this App ID, and the manifest lists the repository.',
 };
 
+/** SDK releases after 0.1.1-rc.2 set `retryable` on unverified claims whose check could not complete. */
+const isRetryable = (c: ClaimResult) => c.state === 'unverified' && (c as { retryable?: boolean }).retryable === true;
+
+export const UNAVAILABLE_LABEL = 'Temporarily unavailable';
+
 function explain(c: ClaimResult): string {
+  if (isRetryable(c)) return 'The check could not finish (RPC or host did not answer). This is not a failure; reload to retry.';
   if (c.state === 'verified') return (c.method && EXPLAIN[c.method]) ?? 'Both sides point to each other.';
   if (c.state === 'attested') return 'A trusted issuer attested this link. It was not confirmed by a live check.';
   if (c.state === 'failed') return 'The proof points to a different app or cluster.';
@@ -106,13 +114,14 @@ function chip(kind: ChipKind, c: ClaimResult | ProgramClaimResult): ChipView {
     subject: c.subject,
     display: kind === 'domain' ? displayHost(c.subject) : c.subject,
     state: c.state,
-    label: evidenceLabel(kind, c.state),
+    label: isRetryable(c) ? UNAVAILABLE_LABEL : evidenceLabel(kind, c.state),
     how: c.method ? METHOD_LABEL[c.method] ?? c.method : c.state === 'attested' ? 'trusted attestation' : undefined,
     explain: explain(c),
     detail: c.detail,
     cluster: kind === 'program' ? p.cluster : undefined,
     name: kind === 'program' ? p.name : undefined,
     attestedBy: c.attestedBy.map(String),
+    retryable: isRetryable(c),
   };
 }
 

@@ -42,7 +42,7 @@ export default async function ProgramPage({ params }: Props) {
       <section className="card program-link" data-program={view.program} data-state={state}>
         <div className="title-row">
           <h1>Program link</h1>
-          <EvidencePill state={state} kind="program" />
+          <EvidencePill state={state} kind="program" label={view.link?.label} retryable={view.link?.retryable} />
         </div>
         <div className="link-diagram">
           <div className="node">

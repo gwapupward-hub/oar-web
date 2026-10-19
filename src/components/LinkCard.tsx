@@ -6,7 +6,7 @@ const CLUSTER_LABEL: Record<string, string> = { 'solana:mainnet': 'Mainnet', 'so
 
 export function LinkCard({ chip }: { chip: ChipView }) {
   return (
-    <li className={`link-card link-${chip.state}`} data-kind={chip.kind} data-state={chip.state} data-subject={chip.subject}>
+    <li className={`link-card link-${chip.state}`} data-kind={chip.kind} data-state={chip.state} data-retryable={chip.retryable || undefined} data-subject={chip.subject}>
       <span className={`link-icon kind-${chip.kind}`}>
         <KindIcon kind={chip.kind} />
       </span>
@@ -16,7 +16,7 @@ export function LinkCard({ chip }: { chip: ChipView }) {
             {KIND_NAME[chip.kind]}
             {chip.cluster && chip.cluster !== 'solana:devnet' ? <span className="tag">{CLUSTER_LABEL[chip.cluster] ?? chip.cluster}</span> : null}
           </span>
-          <EvidencePill state={chip.state} kind={chip.kind} label={chip.label} />
+          <EvidencePill state={chip.state} kind={chip.kind} label={chip.label} retryable={chip.retryable} />
         </div>
         <p className="link-subject">
           {chip.name ? <strong>{chip.name} </strong> : null}

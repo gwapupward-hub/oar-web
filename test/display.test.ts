@@ -92,3 +92,29 @@ test('labels are evidence-specific, never a blanket "Verified"', () => {
   assert.equal(evidenceLabel('domain', 'verified'), 'Domain linked');
   assert.match(v.chips[0].explain, /upgrade authority published a backlink/);
 });
+
+test('a check that could not finish reads "Temporarily unavailable", never Disputed or plain Unverified', () => {
+  const v = toAppView(resolved({
+    programs: [{ subject: PROGRAM, state: 'unverified', detail: 'RPC read unavailable; retry verification', retryable: true, attestedBy: [], cluster: 'solana:devnet' }],
+    domains: [{ subject: 'down.example', state: 'unverified', detail: 'HTTP 503', retryable: true, attestedBy: [] }, { subject: 'none.example', state: 'unverified', attestedBy: [] }],
+  } as unknown as Partial<ResolvedApp>));
+  const [program, down, none] = v.chips;
+  assert.equal(program.label, 'Temporarily unavailable');
+  assert.equal(program.retryable, true);
+  assert.equal(program.state, 'unverified');
+  assert.match(program.explain, /not a failure; reload to retry/);
+  assert.equal(down.label, 'Temporarily unavailable');
+  assert.equal(none.label, 'Unverified');
+  assert.equal(none.retryable, false);
+  assert.ok(v.chips.every(c => c.label !== 'Disputed / invalid'));
+  assert.equal(v.unverified, true, 'an outage never makes the name look verified');
+});
+
+test('retryable is ignored on any state other than unverified', () => {
+  const v = toAppView(resolved({
+    domains: [{ subject: 'bad.example', state: 'failed', detail: 'names X', retryable: true, attestedBy: [] }],
+  } as unknown as Partial<ResolvedApp>));
+  const bad = v.chips.find(c => c.subject === 'bad.example')!;
+  assert.equal(bad.label, 'Disputed / invalid');
+  assert.equal(bad.retryable, false);
+});
