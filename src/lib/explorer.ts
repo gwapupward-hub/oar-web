@@ -37,7 +37,18 @@ export interface IndexEntry {
   programs: number;
 }
 
-/** App ID → record, manifest and one live-checked state per claim. Null when no valid AppRecord exists there. */
+/** A lookup that could not complete. It is never cached and never rendered as "not found". */
+export class ExplorerUnavailableError extends Error {
+  constructor() {
+    super('OAR lookup temporarily unavailable; retry');
+    this.name = 'ExplorerUnavailableError';
+  }
+}
+
+/**
+ * App ID → record, manifest and one live-checked state per claim. Null when no valid AppRecord exists there.
+ * An AppRecord read that fails (OarRpcUnavailableError in SDK releases after 0.1.1-rc.2) rejects instead.
+ */
 export function getApp(appId: string): Promise<AppView | null> {
   if (!isAddress(appId)) return Promise.resolve(null);
   return appCache(appId, async () => {
@@ -51,7 +62,10 @@ export function getProgram(programId: string): Promise<ProgramView | null> {
   if (!isAddress(programId)) return Promise.resolve(null);
   return programCache(programId, async () => {
     const resolved = await resolveProgram(rpc, address(programId), options(true));
-    if (!resolved) return null;
+    // SDK releases after 0.1.1-rc.2 return a typed retryable result for RPC outages. Throwing renders the
+    // "could not finish the checks" page and is not cached; returning null would wrongly say "no backlink".
+    if (resolved && 'status' in resolved && resolved.status === 'unavailable') throw new ExplorerUnavailableError();
+    if (!resolved || !('app' in resolved)) return null;
     const app = toAppView(resolved.app);
     const link = app.chips.find(c => c.kind === 'program' && c.subject === programId && c.cluster === CLUSTER) ?? null;
     return { program: programId, link, app };

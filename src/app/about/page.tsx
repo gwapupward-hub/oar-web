@@ -26,6 +26,7 @@ export default async function About() {
         <div><dt><EvidencePill state="attested" /></dt><dd>A trusted issuer signed a Solana Attestation Service attestation for the link. This explorer trusts no issuer by default.</dd></div>
         <div><dt><EvidencePill state="unverified" /></dt><dd>Claimed in the manifest, but no proof was found. An app with no linked program or domain is labelled “Unverified” before its name.</dd></div>
         <div><dt><EvidencePill state="failed" /></dt><dd>The proof points to a different app or cluster.</dd></div>
+        <div><dt><EvidencePill state="unverified" label="Temporarily unavailable" retryable /></dt><dd>The check could not finish because the Solana RPC, the domain or the repository host did not answer. It is not a failure; reload to retry.</dd></div>
       </dl>
 
       <h2>What the explorer checks</h2>
