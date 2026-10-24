@@ -500,3 +500,17 @@ p { margin: 0 0 12px; }
   .register-page .wizard-steps { gap: 8px 12px; }
   .register-page .file-list { padding-left: 16px; }
 }
+
+/* Quick Register 2.0: portable draft and non-signing publication watcher. */
+.resume-box { margin: 14px 0; padding: 13px 15px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); min-width: 0; }
+.resume-box summary { cursor: pointer; font-weight: 600; }
+.resume-box p { margin: 8px 0; }
+.resume-box .field { margin: 10px 0; }
+.resume-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.resume-code-text { box-sizing: border-box; width: 100%; max-width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; overflow-wrap: anywhere; }
+.resume-box textarea { width: 100%; max-width: 100%; overflow-wrap: anywhere; }
+.resume-box summary:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+@media (max-width: 640px) {
+  .register-page .resume-actions .button, .register-page .resume-box .button { min-height: 44px; }
+  .register-page .resume-box { padding: 12px; }
+}
