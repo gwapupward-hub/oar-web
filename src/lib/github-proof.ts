@@ -18,7 +18,7 @@ export function prepareGitHubProof(claim: PreparedClaim, repository: string) {
   if (!v.valid) throw new Error('The manifest is invalid. Prepare the registration again.');
   if (manifest.app_id !== claim.appId || manifest.cluster !== 'solana:devnet'
     || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(claim.appId)
-    || hashManifestHex(manifest as OarManifest) !== claim.manifestSha256) throw new Error('This draft does not match its verified Devnet manifest. Prepare it again.');
+    || hashManifestHex(manifest as unknown as OarManifest) !== claim.manifestSha256) throw new Error('This draft does not match its verified Devnet manifest. Prepare it again.');
   const listed = (manifest.repositories as Array<{ url: string }> | undefined) ?? [];
   if (!listed.some(item => item?.url === repository)) throw new Error('This repository must already be named in the manifest you prepared.');
   // Never trust arbitrary file bodies supplied by a browser; build the proof server-side.
