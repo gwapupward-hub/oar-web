@@ -480,3 +480,23 @@ p { margin: 0 0 12px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Registration onboarding: legible guidance and reachable controls in wallet browsers. */
+.wallet-button:disabled { opacity: 0.7; cursor: not-allowed; }
+.wallet-button:focus-visible, .link-button:focus-visible, .hosting-guide summary:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.mobile-setup { margin: 8px 0 0; padding-left: 22px; }
+.mobile-setup li + li { margin-top: 6px; }
+.hosting-guide { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
+.hosting-guide summary { cursor: pointer; font-weight: 600; }
+.hosting-guide ol { padding-left: 20px; margin: 10px 0; }
+.hosting-guide li + li { margin-top: 8px; }
+.hosting-guide code, .proof-help { overflow-wrap: anywhere; }
+.proof-help { color: var(--text); }
+@media (max-width: 640px) {
+  .register-page .wizard-card { min-width: 0; }
+  .register-page .wallet-button { min-height: 48px; }
+  .register-page .file-actions .button { min-height: 44px; height: auto; }
+  .register-page .uri-editor .button, .register-page .tx-review .button { min-height: 44px; }
+  .register-page .wizard-steps { gap: 8px 12px; }
+  .register-page .file-list { padding-left: 16px; }
+}

@@ -12,7 +12,7 @@ export const CHAIN = 'solana:devnet' as const;
 export function usableWallets(): Wallet[] {
   return getWallets()
     .get()
-    .filter(w => StandardConnect in w.features && SolanaSignTransaction in w.features && w.chains.includes(CHAIN));
+    .filter(w => StandardConnect in w.features && SolanaSignTransaction in w.features);
 }
 
 export function useWallets(): Wallet[] {
@@ -33,8 +33,8 @@ export function useWallets(): Wallet[] {
 
 export async function connect(wallet: Wallet): Promise<WalletAccount> {
   const { accounts } = await (wallet.features as StandardConnectFeature)[StandardConnect].connect();
-  const account = accounts.find(a => a.chains.includes(CHAIN)) ?? accounts[0];
-  if (!account) throw new Error(`${wallet.name} did not share an account.`);
+  const account = accounts.find(a => a.chains.includes(CHAIN));
+  if (!account) throw new Error(`${wallet.name} did not return an account that supports Solana Devnet. Enable Devnet in the wallet and reconnect.`);
   return account;
 }
 

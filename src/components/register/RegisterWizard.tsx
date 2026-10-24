@@ -8,7 +8,8 @@ import { ArrowRight, Check, CircleAlert, CircleCheck, CircleDashed, Copy, Downlo
 import { CATEGORIES, type BuiltLink, type BuiltTransaction, type CheckResult, type CheckRow, type CategoryName, type PreparedClaim } from '@/lib/register-types';
 import { CopyButton } from '../CopyButton';
 import { base64ToBytes, bytesToBase64, download, inspectTransaction, post, programName, type DecodedTransaction } from './api';
-import { connect, signTransaction, useWallets } from './wallet';
+import { CHAIN, connect, signTransaction, useWallets } from './wallet';
+import { explainProof, friendlyWalletError } from './guidance';
 
 const STORE_KEY = 'oar-register-claim-v1';
 const STEPS = ['Connect', 'Describe', 'Deploy & check', 'Register', 'Link programs'] as const;
@@ -53,7 +54,7 @@ export function RegisterWizard() {
       setWallet(w);
       setAccount(a);
     } catch (e) {
-      setError((e as Error).message);
+      setError(friendlyWalletError(e));
     }
   }
 
@@ -142,17 +143,18 @@ function ConnectStep({ wallets, onConnect }: { wallets: Wallet[]; onConnect: (w:
     <section className="card wizard-card" aria-labelledby="connect-h">
       <h2 id="connect-h">Connect the creator wallet</h2>
       <p className="muted">
-        This wallet signs the registration and pays about 0.0039 SOL of devnet rent. The App ID is derived from it, so
-        nobody else can take it. Switch your wallet to <strong>devnet</strong> first.
+        Choose a wallet that supports Solana Devnet. It will sign a transaction to create your App ID and pay network
+        rent (approximately 0.0039 devnet SOL). OAR charges nothing for identity verification.
       </p>
+      <p className="small muted">You keep control of your wallet. Never enter a recovery phrase or private key into this page.</p>
       {wallets.length ? (
         <ul className="wallet-list">
           {wallets.map(w => (
             <li key={w.name}>
-              <button type="button" className="wallet-button" onClick={() => onConnect(w)}>
+              <button type="button" className="wallet-button" onClick={() => onConnect(w)} disabled={!w.chains.includes(CHAIN)}>
                 {/* Wallet Standard icons are data: URIs supplied by the extension. */}
                 <img src={w.icon} alt="" width={28} height={28} />
-                <span>{w.name}</span>
+                <span>{w.name}{!w.chains.includes(CHAIN) ? ' · Devnet unavailable; enable it in wallet settings' : ''}</span>
                 <ArrowRight size={16} aria-hidden="true" />
               </button>
             </li>
@@ -196,10 +198,14 @@ function NoWallet() {
   }
   return (
     <div className="mobile-wallets" data-field="mobile-wallets">
-      <p className="callout">
-        On a phone, your wallet is only available inside its own app. Open this page there; your progress is kept on this
-        device only if you stay in the same app.
-      </p>
+      <div className="callout">
+        <strong>Register from your phone in 3 steps</strong>
+        <ol className="mobile-setup">
+          <li>Open this page in Phantom or Solflare using a button below.</li>
+          <li>Enable Solana Devnet in the wallet app, then return here and connect.</li>
+          <li>Prepare and copy the JSON files in that same wallet browser. A different browser will not have your saved draft.</li>
+        </ol>
+      </div>
       <ul className="wallet-list">
         {links.map(l => (
           <li key={l.name}>
@@ -249,6 +255,7 @@ function DescribeStep({
   return (
     <section className="card wizard-card" aria-labelledby="describe-h">
       <h2 id="describe-h">Describe the app</h2>
+      <p className="small muted">Start with a name. Domains, repositories and program links are optional; each proof is checked independently, and a claimed link does not become verified just by listing it.</p>
       {saved ? (
         <p className="callout">
           You started registering <strong>{String(saved.manifest.name)}</strong> (<code>{short(saved.appId)}</code>).{' '}
@@ -284,7 +291,7 @@ function DescribeStep({
           </div>
         </fieldset>
         <label className="field">
-          <span>Domains <em>one per line; the first hosts the manifest</em></span>
+          <span>Domains <em>optional; one per line. The first defaults to hosting the manifest</em></span>
           <textarea name="domains" rows={2} placeholder="myapp.xyz" spellCheck={false} />
         </label>
         <label className="field">
@@ -327,6 +334,7 @@ function CheckList({ rows }: { rows: CheckRow[] }) {
             <div>
               <span className="link-kind">{r.kind}</span> <code className="wrap">{r.subject}</code>
               <p className="small muted">{r.detail}</p>
+              {explainProof(r) ? <p className="small proof-help"><strong>Next:</strong> {explainProof(r)}</p> : null}
             </div>
           </li>
         );
@@ -394,10 +402,15 @@ function ManifestUriEditor({ value, onSave }: { value: string; onSave: (uri: str
         />
       </label>
       <button type="submit" className="button button-secondary" disabled={!valid || draft.trim() === value}>Use this address</button>
-      <p className="small muted">
-        No website? Paste the manifest into a public GitHub Gist, tap <strong>Raw</strong>, and copy that address. The file
-        can live anywhere public: the record pins its SHA-256, so a changed file simply fails the check.
-      </p>
+      <details className="hosting-guide">
+        <summary>Where should I host this JSON? See 3 options</summary>
+        <ol>
+          <li><strong>Your website (recommended):</strong> publish <code>/.well-known/oar-manifest.json</code> from your public/static folder. This is separate from the <code>/.well-known/oar.json</code> domain proof.</li>
+          <li><strong>Public GitHub repository:</strong> commit <code>oar-manifest.json</code>, open the file, copy its <em>Raw</em> URL and replace the branch segment with the full 40-character commit SHA. Do not paste a github.com HTML page link.</li>
+          <li><strong>Public GitHub Gist:</strong> paste the JSON into a public Gist named <code>oar-manifest.json</code>, then copy the <em>Raw</em> URL. Prefer an immutable revision-specific URL; changing its bytes later requires a signed manifest update.</li>
+        </ol>
+        <p className="small muted">Use a public URL returning JSON over HTTPS (or a supported IPFS/Arweave URI), with no login, redirects, or blocking challenges. The checker must fetch exactly the JSON you downloaded; never overwrite an <code>oar.json</code> ownership proof.</p>
+      </details>
     </form>
   );
 }
@@ -468,7 +481,7 @@ function DeployStep({
       </ol>
       <p className="small muted">
         The manifest is committed onchain by its SHA-256 (<code className="wrap">{claim.manifestSha256}</code>). Formatting
-        does not matter; any change to its content does.
+        does not matter; any change to its content does. Ownership proofs are free and neutral, not security audits.
       </p>
       <button type="button" className="button" onClick={check} disabled={busy || !claim.manifestUri}>
         {busy ? <LoaderCircle className="spin" size={16} aria-hidden="true" /> : <ShieldCheck size={16} aria-hidden="true" />}{' '}
@@ -477,7 +490,7 @@ function DeployStep({
       {error ? <p className="wizard-error" role="alert"><CircleAlert size={16} aria-hidden="true" /> {error}</p> : null}
       {checked ? <CheckList rows={checked.rows} /> : null}
       {checked && !checked.readyToRegister && !checked.registered ? (
-        <p className="small muted">Registration unlocks once the manifest line is green. Nothing has been signed.</p>
+        <p className="small muted">Registration unlocks once the manifest line is green. Other ownership links can stay pending; they are not treated as verified. Nothing has been signed.</p>
       ) : null}
     </section>
   );
@@ -524,7 +537,7 @@ function SignPanel({
       }
       throw new Error(`Still waiting for ${signature}. Check it on Solana Explorer before trying again.`);
     } catch (e) {
-      setError((e as Error).message);
+      setError(friendlyWalletError(e));
       setPhase('review');
     }
   }
