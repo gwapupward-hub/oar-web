@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getBase58Encoder } from '@solana/kit';
 import type { Wallet, WalletAccount } from '@wallet-standard/base';
@@ -10,6 +10,7 @@ import { CopyButton } from '../CopyButton';
 import { base64ToBytes, bytesToBase64, download, inspectTransaction, post, programName, type DecodedTransaction } from './api';
 import { CHAIN, connect, signTransaction, useWallets } from './wallet';
 import { explainProof, friendlyWalletError } from './guidance';
+import { decodeClaimHandoff, encodeClaimHandoff } from '@/lib/claim-handoff';
 
 const STORE_KEY = 'oar-register-claim-v1';
 const STEPS = ['Connect', 'Describe', 'Deploy & check', 'Register', 'Link programs'] as const;
@@ -102,7 +103,15 @@ export function RegisterWizard() {
           creator={account.address}
           saved={saved?.creator === account.address ? saved : null}
           onResume={async c => {
+            if (c.creator !== account.address) {
+              setError('This draft belongs to a different creator wallet. Connect that wallet to resume it.');
+              return;
+            }
+            setError(null);
+            save(c);
+            setSaved(c);
             setClaim(c);
+            setChecked(null);
             if (c.manifestUri) await runCheck(c).catch(e => setError((e as Error).message));
           }}
           onPrepared={c => {
@@ -117,6 +126,7 @@ export function RegisterWizard() {
       {claim && account && wallet ? (
         <>
           <DeployStep
+            key={`${claim.appId}:${claim.manifestUri}`}
             claim={claim}
             checked={checked}
             onCheck={() => runCheck(claim)}
@@ -203,7 +213,7 @@ function NoWallet() {
         <ol className="mobile-setup">
           <li>Open this page in Phantom or Solflare using a button below.</li>
           <li>Enable Solana Devnet in the wallet app, then return here and connect.</li>
-          <li>Prepare and copy the JSON files in that same wallet browser. A different browser will not have your saved draft.</li>
+          <li>Prepare files there. If you start elsewhere, paste an OAR resume code after connecting the same wallet.</li>
         </ol>
       </div>
       <ul className="wallet-list">
@@ -228,6 +238,19 @@ function DescribeStep({
 }: { creator: string; saved: PreparedClaim | null; onResume: (c: PreparedClaim) => void; onPrepared: (c: PreparedClaim) => void; onError: (m: string | null) => void }) {
   const [busy, setBusy] = useState(false);
   const [categories, setCategories] = useState<CategoryName[]>([]);
+  const [resumeCode, setResumeCode] = useState('');
+  const [resumeError, setResumeError] = useState<string | null>(null);
+
+  function importDraft() {
+    setResumeError(null);
+    try {
+      const draft = decodeClaimHandoff(resumeCode);
+      if (draft.creator !== creator) throw new Error('Connect the wallet that originally prepared this draft.');
+      onResume(draft);
+    } catch (e) {
+      setResumeError((e as Error).message);
+    }
+  }
 
   async function submit(form: FormData) {
     onError(null);
@@ -262,6 +285,16 @@ function DescribeStep({
           <button type="button" className="link-button" onClick={() => onResume(saved)}>Resume it</button>
         </p>
       ) : null}
+      <details className="resume-box">
+        <summary>Already started on another browser? Paste a resume code</summary>
+        <p className="small muted">Copy the code from that browser’s Deploy step. It contains the app draft and public wallet address, never private keys. Only use codes you generated.</p>
+        <label className="field">
+          <span>Resume code</span>
+          <textarea value={resumeCode} onChange={e => setResumeCode(e.target.value)} rows={2} maxLength={40_000} placeholder="OAR2.…" spellCheck={false} autoComplete="off" />
+        </label>
+        <button type="button" className="button button-secondary" onClick={importDraft} disabled={!resumeCode.trim()}>Resume with this wallet</button>
+        {resumeError ? <p className="wizard-error" role="alert"><CircleAlert size={16} aria-hidden="true" /> {resumeError}</p> : null}
+      </details>
       <form action={submit} className="claim-form">
         <label className="field">
           <span>Name <em>required</em></span>
@@ -376,6 +409,40 @@ function FileActions({ filename, value }: { filename: string; value: unknown }) 
   );
 }
 
+/** A portable draft is copied only at the user's request; no server accounts or secrets are involved. */
+function ResumeCode({ claim }: { claim: PreparedClaim }) {
+  const [copied, setCopied] = useState(false);
+  const [show, setShow] = useState(false);
+  let code: string;
+  try {
+    code = encodeClaimHandoff(claim);
+  } catch {
+    return <p className="small muted">This draft is too large for a resume code. Download the JSON files here and prepare it again in your wallet browser.</p>;
+  }
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+    } catch {
+      setShow(true);
+    }
+  }
+  return (
+    <div className="resume-box" data-field="resume-code">
+      <strong>Switching browsers or devices?</strong>
+      <p className="small muted">Carry this draft into Phantom, Solflare or another browser. It includes public app details and the creator address, not wallet keys. Keep it private until you're ready to publish.</p>
+      <div className="resume-actions">
+        <button type="button" className="button button-secondary" onClick={copy}>
+          {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+          {copied ? 'Resume code copied' : 'Copy resume code'}
+        </button>
+        <button type="button" className="link-button" onClick={() => setShow(v => !v)}>{show ? 'Hide code' : 'Show selectable code'}</button>
+      </div>
+      {show ? <textarea className="resume-code-text" value={code} readOnly rows={3} onFocus={e => e.currentTarget.select()} aria-label="Select and copy OAR resume code" /> : null}
+    </div>
+  );
+}
+
 const URI_PATTERN = /^(https:\/\/|ar:\/\/|ipfs:\/\/)\S+$/;
 
 function ManifestUriEditor({ value, onSave }: { value: string; onSave: (uri: string) => void }) {
@@ -420,6 +487,34 @@ function DeployStep({
 }: { claim: PreparedClaim; checked: CheckResult | null; onCheck: () => Promise<void>; onReset: () => void; onManifestUri: (uri: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [watching, setWatching] = useState(false);
+  const onCheckRef = useRef(onCheck);
+  useEffect(() => { onCheckRef.current = onCheck; }, [onCheck]);
+  useEffect(() => {
+    if (!watching || !claim.manifestUri || checked?.readyToRegister || checked?.registered) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let attempts = 0;
+    async function tick() {
+      if (stopped) return;
+      if (document.visibilityState !== 'hidden') {
+        attempts++;
+        try {
+          await onCheckRef.current();
+          if (!stopped) setError(null);
+        } catch (e) {
+          if (!stopped) setError((e as Error).message);
+        }
+        if (attempts >= 6) {
+          if (!stopped) setWatching(false);
+          return;
+        }
+      }
+      if (!stopped) timer = setTimeout(tick, 20_000);
+    }
+    timer = setTimeout(tick, 20_000);
+    return () => { stopped = true; clearTimeout(timer); };
+  }, [watching, claim.manifestUri, checked?.readyToRegister, checked?.registered]);
   const domains = (claim.manifest.domains as string[] | undefined) ?? [];
   const repos = ((claim.manifest.repositories as { url: string }[] | undefined) ?? []).map(r => r.url);
   const onSite = domains[0] && claim.manifestUri.startsWith(`https://${domains[0]}/`);
@@ -449,6 +544,7 @@ function DeployStep({
         <code data-field="app-id">{claim.appId}</code>
         <CopyButton value={claim.appId} label="App ID" />
       </div>
+      <ResumeCode claim={claim} />
       <ol className="file-list">
         <li>
           <FileActions filename="oar-manifest.json" value={claim.manifest} />
@@ -475,7 +571,11 @@ function DeployStep({
         {repos.length && claim.repoProof ? (
           <li>
             <FileActions filename="oar.json" value={claim.repoProof} />
-            <span>Commit to the root of {repos.map((r, i) => <span key={r}>{i ? ', ' : ''}<code className="wrap">{r}</code></span>)}.</span>
+            <span>Commit to the root of each repository’s default branch. {repos.map((r, i) => (
+              <span key={r}>{i ? ', ' : ''}
+                <a href={r} target="_blank" rel="noopener noreferrer">Open repository <ExternalLink size={12} aria-hidden="true" /></a>
+              </span>
+            ))}. Name the file exactly <code>oar.json</code>; a manifest file does not prove repository control.</span>
           </li>
         ) : null}
       </ol>
@@ -483,10 +583,18 @@ function DeployStep({
         The manifest is committed onchain by its SHA-256 (<code className="wrap">{claim.manifestSha256}</code>). Formatting
         does not matter; any change to its content does. Ownership proofs are free and neutral, not security audits.
       </p>
-      <button type="button" className="button" onClick={check} disabled={busy || !claim.manifestUri}>
-        {busy ? <LoaderCircle className="spin" size={16} aria-hidden="true" /> : <ShieldCheck size={16} aria-hidden="true" />}{' '}
-        {checked ? 'Check again' : 'Check the deployment'}
-      </button>
+      <div className="resume-actions">
+        <button type="button" className="button" onClick={check} disabled={busy || !claim.manifestUri}>
+          {busy ? <LoaderCircle className="spin" size={16} aria-hidden="true" /> : <ShieldCheck size={16} aria-hidden="true" />}{' '}
+          {checked ? 'Check again' : 'Check the deployment'}
+        </button>
+        {!checked?.readyToRegister && !checked?.registered && claim.manifestUri ? (
+          <button type="button" className="button button-secondary" onClick={() => setWatching(v => !v)}>
+            <RotateCcw size={15} aria-hidden="true" /> {watching ? 'Stop auto-check' : 'Watch for publication'}
+          </button>
+        ) : null}
+      </div>
+      {watching ? <p className="small muted" role="status">Checking every 20 seconds while this page is visible, up to six attempts. No signature will be requested automatically.</p> : null}
       {error ? <p className="wizard-error" role="alert"><CircleAlert size={16} aria-hidden="true" /> {error}</p> : null}
       {checked ? <CheckList rows={checked.rows} /> : null}
       {checked && !checked.readyToRegister && !checked.registered ? (
