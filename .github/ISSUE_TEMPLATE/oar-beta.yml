@@ -1,0 +1,56 @@
+name: OAR Devnet onboarding feedback
+description: Report voluntary mobile or desktop registration friction without sharing secrets.
+title: "[Beta] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing Open App Registry independently.
+        **Never include a seed phrase, private key, session token, private repository detail, or personal wallet backup.**
+        An ownership proof is not a security audit.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Device / browser
+      options:
+        - iPhone Safari
+        - iPhone wallet browser
+        - Android Chrome
+        - Android wallet browser
+        - Desktop Chrome
+        - Desktop Safari
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: wallet
+    attributes:
+      label: Wallet app (name only)
+      placeholder: Phantom, Solflare, other, or none
+  - type: dropdown
+    id: step
+    attributes:
+      label: Where was the friction?
+      options:
+        - Connect wallet
+        - Describe app
+        - Move draft to wallet browser
+        - Publish manifest
+        - Publish domain or GitHub proof
+        - Check errors
+        - Review and sign transaction
+        - Explore registry listing
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened, and what should OAR do instead?
+      description: Include public error messages only. No credentials or private documents.
+    validations:
+      required: true
+  - type: input
+    id: duration
+    attributes:
+      label: Approximate time spent (optional)
+      placeholder: 3 minutes

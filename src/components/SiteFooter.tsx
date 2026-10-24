@@ -18,6 +18,8 @@ export function SiteFooter() {
         <nav className="footer-links" aria-label="Footer">
           <Link href="/register">Register an app</Link>
           <Link href="/about">How it works</Link>
+          <Link href="/beta">Developer beta</Link>
+          <Link href="/monitoring">Monitoring (planned)</Link>
           <a href={OAR_REPO_URL} target="_blank" rel="noopener noreferrer">Protocol source</a>
           <a href={`${OAR_REPO_URL}/blob/${OAR_RELEASE}/docs/spec-v0.1.md`} target="_blank" rel="noopener noreferrer">Spec v0.1</a>
           <a href={OAR_RELEASE_URL} target="_blank" rel="noopener noreferrer">Release {OAR_RELEASE}</a>

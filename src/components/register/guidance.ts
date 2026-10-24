@@ -42,3 +42,21 @@ export function friendlyWalletError(error: unknown): string {
   }
   return message;
 }
+
+
+/** Public inspection links are convenience only; they never change proof verdicts. */
+export function proofAction(row: CheckRow): { href: string; label: string } | null {
+  try {
+    if (row.kind === 'manifest' && row.subject.length < 250) {
+      const url = new URL(row.subject);
+      if (url.protocol === 'https:' && !url.username && !url.password) return { href: url.toString(), label: 'Open published manifest' };
+    }
+    if (row.kind === 'domain' && /^(?:[a-z0-9-]+\.)+[a-z]{2,63}$/i.test(row.subject))
+      return { href: `https://${row.subject}/.well-known/oar.json`, label: 'Open domain proof URL' };
+    if (row.kind === 'repository' && /^https:\/\/github\.com\/[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+\/?$/.test(row.subject))
+      return { href: row.subject, label: 'Open repository' };
+    if ((row.kind === 'program' || row.kind === 'record') && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(row.subject))
+      return { href: `https://explorer.solana.com/address/${row.subject}?cluster=devnet`, label: 'Inspect on Solana Explorer' };
+  } catch { /* invalid URL: do not render a clickable action */ }
+  return null;
+}

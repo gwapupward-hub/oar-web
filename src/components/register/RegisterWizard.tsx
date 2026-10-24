@@ -9,7 +9,8 @@ import { CATEGORIES, type BuiltLink, type BuiltTransaction, type CheckResult, ty
 import { CopyButton } from '../CopyButton';
 import { base64ToBytes, bytesToBase64, download, inspectTransaction, post, programName, type DecodedTransaction } from './api';
 import { CHAIN, connect, signTransaction, useWallets } from './wallet';
-import { explainProof, friendlyWalletError } from './guidance';
+import { explainProof, friendlyWalletError, proofAction } from './guidance';
+import { GitHubProofPublisher } from './GitHubProofPublisher';
 import { decodeClaimHandoff, encodeClaimHandoff } from '@/lib/claim-handoff';
 
 const STORE_KEY = 'oar-register-claim-v1';
@@ -361,13 +362,16 @@ function CheckList({ rows }: { rows: CheckRow[] }) {
     <ul className="check-list">
       {rows.map(r => {
         const Icon = STATE_ICON[r.state];
+        const guidance = explainProof(r);
+        const action = proofAction(r);
         return (
           <li key={`${r.kind}:${r.subject}`} className={`check-${r.state}`} data-kind={r.kind} data-state={r.state}>
             <Icon size={16} aria-hidden="true" />
             <div>
               <span className="link-kind">{r.kind}</span> <code className="wrap">{r.subject}</code>
               <p className="small muted">{r.detail}</p>
-              {explainProof(r) ? <p className="small proof-help"><strong>Next:</strong> {explainProof(r)}</p> : null}
+              {guidance ? <p className="small proof-help"><strong>Next:</strong> {guidance}</p> : null}
+              {action ? <a className="small proof-action" href={action.href} target="_blank" rel="noopener noreferrer">{action.label} <ExternalLink size={13} aria-hidden="true" /></a> : null}
             </div>
           </li>
         );
@@ -579,6 +583,7 @@ function DeployStep({
           </li>
         ) : null}
       </ol>
+      {repos.length && claim.repoProof ? <GitHubProofPublisher claim={claim} repositories={repos} /> : null}
       <p className="small muted">
         The manifest is committed onchain by its SHA-256 (<code className="wrap">{claim.manifestSha256}</code>). Formatting
         does not matter; any change to its content does. Ownership proofs are free and neutral, not security audits.
