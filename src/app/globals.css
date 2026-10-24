@@ -514,3 +514,18 @@ p { margin: 0 0 12px; }
   .register-page .resume-actions .button, .register-page .resume-box .button { min-height: 44px; }
   .register-page .resume-box { padding: 12px; }
 }
+
+/* Guided repository proof publication: preserves touch targets and manual fallback. */
+.github-proof-assist { margin: 16px 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-2); padding: 15px; }
+.github-proof-assist h3 { margin: 0 0 6px; font-size: 1.03rem; }
+.github-proof-assist .field { margin-top: 12px; }
+.github-proof-assist select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; min-height: 44px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 9px; }
+.github-proof-assist a { overflow-wrap: anywhere; }
+.github-proof-assist .callout p { margin: 8px 0 0; }
+.proof-connected { color: var(--t-active); display: flex; gap: 8px; align-items: center; }
+.proof-action { display: inline-flex; align-items: center; gap: 5px; margin: 5px 0 2px; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .register-page .github-proof-assist { padding: 12px; }
+  .register-page .github-proof-assist .button { min-height: 44px; }
+  .register-page .github-proof-assist .resume-actions { align-items: stretch; }
+}

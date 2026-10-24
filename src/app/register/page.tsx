@@ -19,13 +19,14 @@ export default async function RegisterPage() {
       <ul className="assurances small">
         <li>No account, custody or OAR verification fee. A Devnet registration still uses network rent and transaction fees. Never share a seed phrase or key file.</li>
         <li>Before every signature, the page shows what the transaction does and checks that it calls only OAR registry programs.</li>
-        <li>On a phone, open the page inside Phantom or Solflare. Use the same wallet browser for your saved draft and check progress.</li>
+        <li>On a phone, open OAR inside Phantom or Solflare. A resume code lets you carry a prepared draft into the same connected wallet on another browser. After GitHub sign-in, reconnect your wallet and resume the saved draft.</li>
         <li>A verified domain, repository or program link proves control of that resource — not a security audit, endorsement or safety guarantee.</li>
         <li>
           Prefer the command line? The same flow is <code>oar claim</code>; see{' '}
           <a href="https://github.com/gwapupward-hub/oar/blob/main/docs/REGISTERING.md">the registration guide</a>.
         </li>
       </ul>
+      <p className="small muted">Helping us improve onboarding? Try the <Link href="/beta">independent developer beta checklist</Link>; feedback is voluntary and never changes an app's verification status.</p>
       <RegisterWizard />
     </div>
   );
