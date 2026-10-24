@@ -34,3 +34,17 @@ Capture for each pilot: device/browser/wallet, Devnet creator (public address on
 ## Current automation boundary
 
 `npm test` exercises 5 standalone manifest/proof fixtures and user-facing error guidance. It does not access owner wallets, publish live proofs, sign transactions, verify live uptime, or assert Mainnet readiness. Such actions require the relevant application's owner to approve or perform them.
+
+## Read-only hosted endpoint preflight — October 24, 2026
+
+A single test runner made HTTPS GET requests to both `/.well-known/oar-manifest.json` and `/.well-known/oar.json` for the five candidate domains. These are observations from that runner, not globally verified uptime or a wallet/device test. Response bodies were inspected in addition to the HTTP status.
+
+| Host | Manifest response | Domain-proof response | Interpretation |
+| --- | --- | --- | --- |
+| `oarprotocol.xyz` | HTTP 404 HTML | HTTP 200 valid OAR JSON naming `Bu1JCyxiVDdDGjtNLLkKhq6KZv6E4LcUgqNkS5t5Nf2K` | OAR intentionally uses a pinned GitHub manifest URI; its default website manifest URL is not the canonical record URI. |
+| `gwapspot.fun` | HTTP 200 JSON, `name: OAR rehearsal`, App ID `ET2mbpPPWH9oksjksVTU8eVUMhsEpq5EuZLq35ZF3fXc` | HTTP 200 matching rehearsal proof JSON | Do not treat these as a new GNS registration. A separately prepared GNS App ID and its corresponding files would be needed. |
+| `gwapspot.com` | HTTP 503 upstream connection failure from this runner | HTTP 503 upstream connection failure | Retry from actual hosting and another network; this alone is not conclusive evidence the public production site is down. |
+| `gwapscore.live` | HTTP 200 `text/html` site markup | HTTP 200 `text/html` site markup | SPA fallback is **not** an OAR proof; publish specific JSON endpoints that bypass the SPA fallback. |
+| `lilgwapz.xyz` | HTTP 200 `text/html` with “Site Unavailable” | Same “Site Unavailable” HTML | Resolve public hosting before starting the signed proof workflow. |
+
+All ten preflight requests completed without a reported HTTP redirect. No live signed registration was created; no owner keys were accessed. **No claim of proof verification for these new pilots is made.** The OAR reference App ID was previously owner-signed and independently documented.
